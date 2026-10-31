@@ -1,0 +1,66 @@
+/* W03이 열려 있을 때만 Vite 기본 레이아웃을 대체한다. */
+#root:has(> .w03-shell) { width: 100%; max-width: none; border: 0; text-align: left; }
+.w03-shell, .w03 {
+  --surface: #181b21; --canvas: #101115; --line: #30343d; --muted: #aab1be;
+  color-scheme: dark; color: #eff1f5; background: var(--canvas);
+  font: 14px/1.5 system-ui, 'Malgun Gothic', sans-serif; letter-spacing: 0;
+}
+.w03-shell { display: grid; grid-template-columns: minmax(0,1fr) 210px; min-height: 100svh; }
+.w03-shell.collapsed { grid-template-columns: minmax(0,1fr) 48px; }
+.w03 { min-width: 0; text-align: left; }
+.w03 *, .w03-shell aside * { box-sizing: border-box; }
+.w03 h1, .w03 h2, .w03-dialog h2 { font-family: inherit; font-weight: 700; line-height: 1.4; color: inherit; letter-spacing: 0; margin: 0; }
+.w03 h1 { font-size: 20px; }
+.w03 h2, .w03-dialog h2 { font-size: 16px; }
+.w03 p { margin: 0; }
+.w03-head,.w03-panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--surface); }
+.w03-head { padding: 14px 24px; border-bottom: 1px solid var(--line); }
+.w03-head > span { font-size:12px; color:#b2caff; background:#202f4b; border-radius:20px; padding:3px 11px; }
+.w03-body { padding:24px; }
+.w03-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:22px; }
+.w03-card,.w03-panel { background:var(--surface); border:1px solid var(--line); border-radius:8px; }
+.w03-card { padding:14px 16px; }
+.w03-card strong { display:block; font-size:24px; margin-top:8px; }
+.w03-pill { display:inline-flex; align-items:center; gap:6px; background:#0d1014; padding:2px 8px; border-radius:20px; font-size:12px; white-space:nowrap; }
+.w03-pill::before { content:''; width:8px; height:8px; border-radius:50%; background:#929baa; }
+.w03-pill.online::before { background:#43d37c; }
+.w03-pill.total::before { background:#629aff; }
+.w03-tools { display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
+.w03-tools label { display:grid; gap:6px; font-size:12px; }
+.w03-tools label:first-child { flex:1; min-width:185px; max-width:330px; }
+.w03 input,.w03 select,.w03 button,.w03-dialog button { border:1px solid var(--line,#343844); border-radius:7px; background:#191d23; color:#eff1f5; padding:9px 12px; min-height:40px; font:inherit; font-size:14px; }
+.w03 input { background:var(--canvas); }
+.w03 button,.w03-dialog button,.w03-side button:not(:disabled) { cursor:pointer; }
+.w03 button:hover:not(:disabled),.w03-dialog button:hover { background:#27344b; border-color:#7086a8; }
+.w03 button:disabled,.w03-side button:disabled { cursor:default; opacity:.62; }
+.w03 :focus-visible,.w03-shell :focus-visible { outline:2px solid #80adff; outline-offset:2px; }
+.w03-actions { margin-left:auto; display:flex; gap:8px; }
+.w03-actions button:last-child { background:#325ca0; }
+.w03-panel { overflow:hidden; }
+.w03-panel-head { padding:16px 18px; }
+.w03 small,.w03 footer,.w03-note { color:var(--muted); font-size:12px; }
+.w03-scroll { overflow:auto; }
+.w03 table { width:100%; border-collapse:collapse; font-size:14px; min-width:735px; }
+.w03 th,.w03 td { padding:21px 12px; text-align:left; border-bottom:1px solid var(--line); }
+.w03 th:first-child,.w03 td:first-child { padding-left:19px; }
+.w03 thead th { padding-block:11px; background:var(--canvas); color:var(--muted); font-size:13px; font-weight:500; }
+.w03 tbody th { font-weight:600; }
+.w03 td { color:#bac1cc; }
+.w03 td:last-child { white-space:nowrap; }
+.w03 footer { text-align:right; padding:11px 18px; }
+.w03 .w03-note { margin-top:18px; }
+.w03-message,.w03-alert { padding:18px; }
+.w03-alert,.w03-play-error { color:#ffc1bb; }
+.w03-alert { background:#352328; margin-bottom:12px; border-radius:7px; }
+.w03-play-error { max-width:210px; margin-top:6px; font-size:12px; }
+.w03-side { border-left:1px solid var(--line); padding:12px; background:var(--surface); }
+.w03-side .w03-toggle { width:100%; border:0; background:transparent; color:#d0d5df; font-size:24px; }
+.w03-side nav { display:grid; gap:4px; }
+.w03-side nav p { color:var(--muted); font-size:12px; margin:18px 10px 4px; }
+.w03-side nav button,.w03-side nav span { text-align:left; font:inherit; padding:10px 12px; border:0; border-radius:7px; background:transparent; color:inherit; }
+.w03-side nav span { color:#91b9ff; background:#202f47; font-weight:650; }
+.w03-dialog { color:#eff1f5; background:#1b2029; border:1px solid #414958; border-radius:10px; padding:24px; max-width:min(370px,85vw); }
+.w03-dialog p { margin:12px 0; }
+.w03-dialog::backdrop { background:#080b11af; }
+@media(max-width:900px) { .w03-shell {grid-template-columns:minmax(0,1fr) 150px;} .w03-body {padding:16px;} }
+@media(max-width:680px) { .w03-shell,.w03-shell.collapsed {display:block;} .w03-side {display:none;} .w03-summary {gap:6px;} .w03-card {padding:10px 8px;} .w03-card strong {font-size:20px;} .w03-actions {margin-left:0;} }

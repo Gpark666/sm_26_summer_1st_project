@@ -23,6 +23,15 @@ test('예시 환경에서 빈 목록, 조회 실패, 재조회 복구를 확인�
   await assert.rejects(source.list(signal, 0))
   assert.equal((await source.list(signal, 1)).length, 4)
 })
+test('many 시나리오는 기본 4대를 포함한 18대를 겹치지 않는 ID로 반환한다', async () => {
+  const rows = await demoSource('many').list(signal, 0)
+  const base = await demoSource().list(signal, 0)
+  assert.equal(rows.length, 18)
+  assert.equal(new Set(rows.map(row => row.cameraId)).size, 18)
+  assert.deepEqual(rows.slice(0, 4).map(row => row.cameraId), base.map(row => row.cameraId))
+  assert.deepEqual(parseList(rows), rows)
+  assert.ok(rows.slice(4).some(row => row.status === 'offline'))
+})
 test('오프라인 장비의 재연결 실패가 다른 장비 상태를 바꾸지 않는다', async () => {
   const source = demoSource()
   const rows = await source.list(signal, 0)

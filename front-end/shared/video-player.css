@@ -1,0 +1,39 @@
+/* Figma CameraTile(22:148) 기준. 크기는 부모(W01 타일, W02 확대 영역)가 정한다. */
+.vp {
+  --vp-dot: #34c759;
+  position: relative; width: 100%; height: 100%; min-height: 160px; overflow: hidden; box-sizing: border-box;
+  background: #0f1115; border: 1px solid #2a2f38; border-radius: 4px;
+  color: #e8eaed; font-size: 12px; line-height: normal; text-align: left;
+}
+.vp * { box-sizing: border-box; }
+.vp.connecting { --vp-dot: #4c8dff; }
+.vp.failed { --vp-dot: #ef5350; }
+.vp.offline { --vp-dot: #8a8f98; }
+.vp-center,.vp-cover { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:40px 12px; text-align:center; }
+.vp-center { color:#9aa0a6; }
+.vp-overlay { position:absolute; inset:0; }
+.vp-cover strong { color:#fff; font-size:14px; font-weight:600; }
+.vp-cover p { margin:0; color:#9aa0a6; }
+.vp.connecting .vp-cover { background:rgba(0,0,0,.5); }
+.vp.offline .vp-cover { background:rgba(15,17,21,.7); }
+.vp.offline .vp-cover p { color:rgba(255,255,255,.7); }
+.vp.failed .vp-cover { background:#0f1115; }
+.vp.connecting .vp-cover img { animation:vp-spin 1.2s linear infinite; }
+.vp-retry { border:1px solid #2a2f38; border-radius:8px; background:#171a20; color:#fff; padding:8px 16px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+.vp-retry:hover { background:#202530; border-color:#3a414d; }
+.vp-top,.vp-bottom { position:absolute; left:0; right:0; display:flex; align-items:center; gap:8px; padding:8px; }
+.vp-top { top:0; background:linear-gradient(rgba(0,0,0,.7), rgba(0,0,0,0)); }
+.vp-bottom { bottom:0; color:#9aa0a6; background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.7)); }
+.vp-name { flex:1; min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vp-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:12px; background:rgba(0,0,0,.6); font-weight:500; white-space:nowrap; }
+.vp-badge::before { content:''; width:8px; height:8px; border-radius:50%; background:var(--vp-dot); }
+/* 1+5의 작은 타일처럼 낮은 타일은 Figma처럼 하단 바를 빼고, 재시도 버튼이 있는 덮개는 아이콘을 빼서 상단 바와 겹치지 않게 한다. */
+.vp { container-type: size; }
+@container (max-height: 200px) {
+  .vp-cover { padding:34px 8px 8px; gap:4px; }
+  .vp.offline .vp-cover img,.vp.failed .vp-cover img { display:none; }
+  .vp-bottom { display:none; }
+  .vp-retry { padding:4px 12px; font-size:12px; }
+}
+@keyframes vp-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .vp.connecting .vp-cover img { animation:none; } }

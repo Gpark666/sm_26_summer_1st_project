@@ -10,6 +10,8 @@ import './video-player.css'
 type Props = {
   camera: Camera
   source: CameraSource
+  // 상단 바에 '카메라명 · 위치'로 표시 (W02)
+  showLocation?: boolean
   // 재생 중일 때 영상 위에 얹을 감지 오버레이 자리 (2차)
   children?: ReactNode
 }
@@ -20,7 +22,7 @@ function time(value: string | null) {
 }
 const badges = { connecting: '연결 중', playing: '온라인', failed: '오류', offline: '오프라인' }
 
-export default function VideoPlayer({ camera, source, children }: Props) {
+export default function VideoPlayer({ camera, source, showLocation, children }: Props) {
   const [state, dispatch] = useReducer(nextState, camera.status, startState)
   // 재시도 횟수는 누른 카메라에만 적용한다. 카메라가 바뀌면 상태대로 다시 시작한다.
   const [retry, setRetry] = useState({ cameraId: '', count: 0 })
@@ -46,6 +48,7 @@ export default function VideoPlayer({ camera, source, children }: Props) {
     count: previous.cameraId === cameraId ? previous.count + 1 : 1 }))
   const retryButton = canRetry(state) && <button className="vp-retry" onClick={again}>재시도</button>
   const lastSeen = '마지막 응답 ' + time(camera.lastSeenAt)
+  const label = showLocation ? camera.name + ' · ' + camera.location : camera.name
 
   return <section className={'vp ' + state.kind} aria-label={camera.name + ' 영상'}>
     {state.kind === 'playing' && <>
@@ -63,7 +66,7 @@ export default function VideoPlayer({ camera, source, children }: Props) {
       <img src={errorIcon} alt="" width={32} height={32} /><strong>연결 실패</strong><p>{state.message}</p>{retryButton}
     </div>}
     <div className="vp-top">
-      <span className="vp-name" title={camera.name}>{camera.name}</span>
+      <span className="vp-name" title={label}>{label}</span>
       <span className="vp-badge">{badges[state.kind]}</span>
     </div>
   </section>

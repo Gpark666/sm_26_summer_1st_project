@@ -15,11 +15,15 @@ type Props = {
   unit: '페이지' | '카메라'
   onPrevious?: () => void
   onNext?: () => void
+  // W02에서는 제목이 복귀 버튼이 된다.
+  onBack?: () => void
 }
 
 export default function LiveTopBar(props: Props) {
   return <header className="w01-head">
-    <h1>라이브 관제</h1>
+    <h1>{props.onBack
+      ? <button className="w01-back" title="더블클릭 또는 Esc로도 돌아갈 수 있어요" onClick={props.onBack}>‹ 라이브 관제</button>
+      : '라이브 관제'}</h1>
     <div className="w01-actions">
       <div className="w01-filters">
         <select aria-label="화면 배치" value={props.layout} onChange={e => props.onLayout(e.target.value)}>

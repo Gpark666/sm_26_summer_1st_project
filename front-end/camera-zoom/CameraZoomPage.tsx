@@ -11,11 +11,6 @@ type Props = {
   source: CameraSource
 }
 type From = Pick<Path, 'pathname' | 'search'>
-const clock = new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' })
-function time(value: string | null) {
-  if (!value || !Number.isFinite(Date.parse(value))) return '—'
-  return clock.format(new Date(value))
-}
 function readFrom(state: unknown): From | null {
   const from = (state as { from?: Partial<From> } | null)?.from
   return typeof from?.pathname === 'string' ? { pathname: from.pathname, search: from.search ?? '' } : null
@@ -79,7 +74,8 @@ export default function CameraZoomPage({ source }: Props) {
       locations={locations} location={location} onLocation={changeLocation}
       unit="카메라" position={camera ? (index + 1) + ' / ' + shown.length : '– / –'}
       onPrevious={index > 0 ? () => show(shown[index - 1], location, index - 1) : undefined}
-      onNext={camera && index < shown.length - 1 ? () => show(shown[index + 1], location, index + 1) : undefined} />
+      onNext={camera && index < shown.length - 1 ? () => show(shown[index + 1], location, index + 1) : undefined}
+      onBack={back} />
     {error && <div role="alert" className="w01-alert">목록 조회 실패 · {error} {updated && '마지막으로 조회한 목록을 표시합니다.'} <button onClick={refresh}>다시 조회</button></div>}
     {loading && !updated && <p role="status" className="w01-message">카메라 목록을 불러오는 중입니다.</p>}
     {updated && !camera && <div role="alert" className="w01-message w02-missing">
@@ -88,17 +84,7 @@ export default function CameraZoomPage({ source }: Props) {
       <button onClick={back}>라이브 관제로 돌아가기</button>
     </div>}
     {camera && <section className="w02-stage" aria-label={camera.name + ' 확대'} onDoubleClick={doubleClick}>
-      <div className="w02-player"><VideoPlayer camera={camera} source={source} /></div>
-      <div className="w02-info">
-        <dl>
-          <div><dt>카메라</dt><dd>{camera.name}</dd></div>
-          <div><dt>위치</dt><dd>{camera.location}</dd></div>
-          <div><dt>장비 상태</dt><dd><span className={'w02-status ' + camera.status}>{camera.status === 'online' ? '온라인' : '오프라인'}</span></dd></div>
-          <div><dt>마지막 응답</dt><dd><time dateTime={camera.lastSeenAt ?? undefined}>{time(camera.lastSeenAt)}</time></dd></div>
-        </dl>
-        <span className="w02-hint">더블클릭 또는 Esc로 돌아가기</span>
-        <button onClick={back}>‹ 라이브 관제로</button>
-      </div>
+      <div className="w02-player"><VideoPlayer camera={camera} source={source} showLocation /></div>
     </section>}
   </main>
 }

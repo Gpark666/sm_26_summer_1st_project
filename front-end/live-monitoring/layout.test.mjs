@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { parseLayout, pageCount, parsePage, pageItems } from './layout.ts'
+import { parseLayout, pageCount, parsePage, pageItems, pageOf } from './layout.ts'
 
 const rows = Array.from({ length: 18 }, (_, index) => index + 1)
 test('레이아웃 쿼리를 읽고 잘못된 값은 2×2로 본다', () => {
@@ -27,4 +27,15 @@ test('페이지에 해당하는 카메라만 잘라 내고 마지막 페이지�
   assert.deepEqual(pageItems(rows, '2x2', 5), [17, 18])
   assert.deepEqual(pageItems(rows, '3x3', 2), [10, 11, 12, 13, 14, 15, 16, 17, 18])
   assert.deepEqual(pageItems([], '2x2', 1), [])
+})
+test('W02에서 돌아갈 때 카메라가 들어 있는 페이지를 계산한다', () => {
+  assert.equal(pageOf(0, '2x2'), 1)
+  assert.equal(pageOf(3, '2x2'), 1)
+  assert.equal(pageOf(4, '2x2'), 2)
+  assert.equal(pageOf(17, '1+5'), 3)
+  assert.equal(pageOf(9, '3x3'), 2)
+  assert.equal(pageOf(-1, '3x3'), 1)
+  for (const index of [0, 5, 6, 11, 12, 17]) {
+    assert.ok(pageItems(rows, '1+5', pageOf(index, '1+5')).includes(rows[index]))
+  }
 })

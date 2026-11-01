@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import MonitoringSettingsPage from '../monitoring-settings/MonitoringSettingsPage'
+import { readPreferences, savePreferences, type Preferences } from '../monitoring-settings/settings'
 import CameraListPage from '../camera-list/CameraListPage'
 import { demoSource, realSource, type Camera } from '../camera-list/cameraApi'
 
@@ -8,23 +10,46 @@ const source = demo
   ? demoSource(new URLSearchParams(window.location.search).get('scenario') ?? '')
   : realSource(import.meta.env.VITE_CAMERA_API_BASE || '/api/v1')
 
+// 인증 연결 후에는 실제 로그인 사용자 ID를 scope에 포함한다.
+const scope = demo ? 'demo' : 'browser'
+const currentPage = () => window.location.hash === '#settings' ? 'settings' : 'cameras'
+
 export default function App() {
   const [selected, setSelected] = useState<Camera | null>(null)
-  const [collapsed, setCollapsed] = useState(false)
+  const [preferences, setPreferences] = useState(() => readPreferences(scope))
+  const [collapsed, setCollapsed] = useState(preferences.value.sidebar === 'collapsed')
+  const [page, setPage] = useState(currentPage)
+  useEffect(() => {
+    const navigate = () => setPage(currentPage())
+    window.addEventListener('hashchange', navigate)
+    return () => window.removeEventListener('hashchange', navigate)
+  }, [])
+  function applySettings(value: Preferences) {
+    savePreferences(scope, value)
+    setPreferences({ value, notice: '' })
+    setCollapsed(value.sidebar === 'collapsed')
+  }
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     if (selected && dialog.current && !dialog.current.open) dialog.current.showModal()
   }, [selected])
 
   return <div className={'w03-shell' + (collapsed ? ' collapsed' : '')}>
-    <CameraListPage source={source} onOpenLive={(camera) => setSelected(camera)} />
+    <nav className="w04-mobile-nav" aria-label="화면 선택">
+      <a href="#cameras" aria-current={page === 'cameras' ? 'page' : undefined}>카메라 목록</a>
+      <a href="#settings" aria-current={page === 'settings' ? 'page' : undefined}>관제 설정</a>
+    </nav>
+    {page === 'settings'
+      ? <MonitoringSettingsPage saved={preferences.value} source={source} initialNotice={preferences.notice} onSave={applySettings} />
+      : <CameraListPage source={source} onOpenLive={(camera) => setSelected(camera)} />}
     <aside className="w03-side" aria-label="관제 메뉴">
       <button className="w03-toggle" aria-label={collapsed ? '메뉴 펼치기' : '메뉴 접기'}
         aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>{collapsed ? '‹' : '›'}</button>
       {!collapsed && <nav aria-label="메인 메뉴">
         <p>관제</p>
-        <button disabled>라이브 관제</button><span aria-current="page">카메라 목록</span>
-        <button disabled>관제 설정</button>
+        <button disabled>라이브 관제</button>
+        <a href="#cameras" aria-current={page === 'cameras' ? 'page' : undefined}>카메라 목록</a>
+        <a href="#settings" aria-current={page === 'settings' ? 'page' : undefined}>관제 설정</a>
         <p>운영</p><button disabled>이벤트 히스토리</button><button disabled>감시 구역 설정</button>
       </nav>}
     </aside>

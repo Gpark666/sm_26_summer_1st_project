@@ -74,12 +74,25 @@ export function demoSource(scenario = ''): CameraSource {
       if (scenario === 'error' && attempt === 0) throw new Error('테스트용 조회 실패입니다.')
       if (scenario === 'empty') return []
       const seen = (seconds: number) => new Date(Date.now() - seconds * 1000).toISOString()
-      return [
+      const rows: Camera[] = [
         { cameraId: 'cam-01', name: '정문 점자블록', location: '본관 1층', status: 'online', lastSeenAt: seen(1) },
         { cameraId: 'cam-02', name: '1층 경사로', location: '본관 1층', status: 'online', lastSeenAt: seen(5) },
         { cameraId: 'cam-03', name: '동측 보행로', location: '동측 외부', status: 'offline', lastSeenAt: seen(95) },
         { cameraId: 'cam-04', name: '서측 출입구', location: '서관 1층', status: 'offline', lastSeenAt: null },
       ]
+      if (scenario !== 'many') return rows
+      // W01 레이아웃·페이지 이동 확인용 18대 (1+5 → 3쪽, 2×2 → 5쪽, 3×3 → 2쪽)
+      return rows.concat([
+        ['2층 엘리베이터 앞', '본관 2층'], ['2층 화장실 입구', '본관 2층'], ['중앙 계단', '본관 2층'],
+        ['주차장 장애인 구역', '지하 1층'], ['주차장 엘리베이터', '지하 1층'], ['서관 경사로', '서관 1층'],
+        ['서관 안내데스크', '서관 1층'], ['후문 횡단보도', '동측 외부'], ['버스 정류장 연결로', '동측 외부'],
+        ['3층 휴게실', '본관 3층'], ['3층 복도', '본관 3층'], ['옥상 정원 입구', '본관 3층'],
+        ['북측 보행로', '북측 외부'], ['북측 출입구', '북측 외부'],
+      ].map(([name, location], index) => ({
+        cameraId: 'cam-' + String(index + 5).padStart(2, '0'), name, location,
+        status: index % 4 === 3 ? 'offline' : 'online',
+        lastSeenAt: index % 4 === 3 ? seen(120 + index * 30) : seen(index + 1),
+      })))
     },
     playback: async (camera, signal) => {
       await wait(signal)

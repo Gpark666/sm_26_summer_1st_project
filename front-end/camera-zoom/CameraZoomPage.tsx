@@ -25,7 +25,10 @@ function readFrom(state: unknown): From | null {
 export default function CameraZoomPage({ source }: Props) {
   const { cameraId = '' } = useParams()
   const navigate = useNavigate()
-  const from = readFrom(useLocation().state)
+  const { state } = useLocation()
+  const from = readFrom(state)
+  // W02 안에서 카메라를 넘기면 moved가 붙는다.
+  const moved = (state as { moved?: boolean } | null)?.moved === true
   const { rows, loading, error, updated, refresh } = useCameraList(source)
 
   const context = new URLSearchParams(from?.search)
@@ -48,10 +51,11 @@ export default function CameraZoomPage({ source }: Props) {
     query.set('page', String(pageOf(at, nextLayout)))
     return { pathname: '/live', search: '?' + query }
   }
-  const back = () => navigate(from ?? '/live', { replace: true })
+  // W01에서 바로 들어왔으면 기록을 되돌리고, 넘겼거나 직접 들어왔으면 복귀 주소로 바꿔치기한다.
+  const back = () => { if (from && !moved) navigate(-1); else navigate(from ?? '/live', { replace: true }) }
   const show = (target: Camera, nextLocation: string, at: number) =>
     navigate('/live/' + encodeURIComponent(target.cameraId),
-      { replace: true, state: { from: returnTo(layout, nextLocation, at) } })
+      { replace: true, state: { from: returnTo(layout, nextLocation, at), moved: true } })
   function changeLocation(value: string) {
     const [first] = filterCameras(rows, '', value, '')
     if (first) show(first, value, 0)

@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { filterCameras, type Camera, type CameraSource } from './cameraApi'
 import './camera-list.css'
 
 type Props = {
   source: CameraSource
-  onOpenLive: (camera: Camera, session: unknown) => void
+  onOpenLive: (camera: Camera) => void
   onAddCamera?: () => void
 }
 const clock = new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' })
@@ -26,9 +26,6 @@ export default function CameraListPage({ source, onOpenLive, onAddCamera }: Prop
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
   const [status, setStatus] = useState('')
-  const [opening, setOpening] = useState('')
-  const [playErrors, setPlayErrors] = useState<Record<string, string>>({})
-  const flight = useRef<AbortController | null>(null)
   useEffect(() => {
     const controller = new AbortController()
     const { signal } = controller
@@ -47,24 +44,6 @@ export default function CameraListPage({ source, onOpenLive, onAddCamera }: Prop
     void load()
     return () => controller.abort()
   }, [source, attempt])
-  useEffect(() => () => flight.current?.abort(), [])
-
-  async function open(camera: Camera) {
-    if (flight.current) return
-    const controller = new AbortController()
-    flight.current = controller
-    setOpening(camera.cameraId)
-    setPlayErrors(previous => ({ ...previous, [camera.cameraId]: '' }))
-    try {
-      const session = await source.playback(camera, controller.signal)
-      if (!controller.signal.aborted) onOpenLive(camera, session)
-    } catch (err) {
-      if (!controller.signal.aborted) setPlayErrors(previous => ({ ...previous, [camera.cameraId]: reason(err) }))
-    } finally {
-      flight.current = null
-      if (!controller.signal.aborted) setOpening('')
-    }
-  }
 
   const online = rows.filter(row => row.status === 'online').length
   const locations = [...new Set(rows.map(row => row.location).concat(location ? [location] : []))]
@@ -104,10 +83,9 @@ export default function CameraListPage({ source, onOpenLive, onAddCamera }: Prop
             <th scope="row">{row.name}</th><td>{row.location}</td>
             <td><span className={'w03-pill ' + row.status}>{row.status === 'online' ? '온라인' : '오프라인'}</span></td>
             <td><time dateTime={row.lastSeenAt ?? undefined} title={row.lastSeenAt ?? undefined}>{time(row.lastSeenAt)}</time></td>
-            <td>{row.status === 'online' ? '장비 응답 정상' : '장비 연결 끊김'}
-              {playErrors[row.cameraId] && <div className="w03-play-error" role="alert">영상 연결 실패 · {playErrors[row.cameraId]}</div>}</td>
-            <td><button disabled={!!opening} onClick={() => void open(row)}>
-              {opening === row.cameraId ? '요청 중…' : (row.status === 'offline' || playErrors[row.cameraId]) ? '영상 재연결' : '실시간 영상 보기'}
+            <td>{row.status === 'online' ? '장비 응답 정상' : '장비 연결 끊김'}</td>
+            <td><button onClick={() => onOpenLive(row)}>
+              {row.status === 'offline' ? '영상 재연결' : '실시간 영상 보기'}
             </button></td>
           </tr>)}</tbody>
         </table></div>}
@@ -115,7 +93,7 @@ export default function CameraListPage({ source, onOpenLive, onAddCamera }: Prop
         {!loading && updated && rows.length > 0 && !shown.length && <div className="w03-message">검색 조건에 맞는 카메라가 없습니다. <button onClick={reset}>조건 초기화</button></div>}
         {updated && <footer>조회된 {rows.length}대 중 {shown.length}대 표시</footer>}
       </section>
-      <p className="w03-note">카메라 상태는 장비 응답을 기준으로 표시합니다. 영상 연결에 실패하면 해당 행에서 재연결하세요.</p>
+      <p className="w03-note">카메라 상태는 장비 응답을 기준으로 표시합니다. 영상 연결 상태와 재시도는 영상 화면에서 확인하세요.</p>
     </div>
   </main>
 }

@@ -12,6 +12,8 @@ type Props = {
   source: CameraSource
   // 상단 바에 '카메라명 · 위치'로 표시 (W02)
   showLocation?: boolean
+  // 상단 바 오른쪽에 둘 버튼 (W01의 '카메라 바꾸기')
+  actions?: ReactNode
   // 재생 중일 때 영상 위에 얹을 감지 오버레이 자리 (2차)
   children?: ReactNode
 }
@@ -22,7 +24,7 @@ function time(value: string | null) {
 }
 const badges = { connecting: '연결 중', playing: '온라인', failed: '오류', offline: '오프라인' }
 
-export default function VideoPlayer({ camera, source, showLocation, children }: Props) {
+export default function VideoPlayer({ camera, source, showLocation, actions, children }: Props) {
   const [state, dispatch] = useReducer(nextState, camera.status, startState)
   // 재시도 횟수는 누른 카메라에만 적용한다. 카메라가 바뀌면 상태대로 다시 시작한다.
   const [retry, setRetry] = useState({ cameraId: '', count: 0 })
@@ -68,6 +70,7 @@ export default function VideoPlayer({ camera, source, showLocation, children }: 
     <div className="vp-top">
       <span className="vp-name" title={label}>{label}</span>
       <span className="vp-badge">{badges[state.kind]}</span>
+      {actions}
     </div>
   </section>
 }

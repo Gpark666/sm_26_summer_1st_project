@@ -49,6 +49,12 @@ export function pageCells<T>(slots: readonly (T | null)[], layout: Layout, page:
   return Array.from({ length: size }, (_, index) => slots[(page - 1) * size + index] ?? null)
 }
 
+// 전체 칸 번호(0부터)가 몇 쪽 몇 번째 칸인지 (둘 다 1부터)
+export function positionOf(index: number, layout: Layout) {
+  const size = layouts[layout]
+  return { page: Math.floor(index / size) + 1, cell: (index % size) + 1 }
+}
+
 // 키보드로 놓을 칸을 고른다. 1+5는 큰 칸(0) 오른쪽에 작은 칸(1~5)이 세로로 있다. 끝에서는 움직이지 않는다.
 export function neighbor(index: number, key: string, layout: Layout) {
   const count = layouts[layout]

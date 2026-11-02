@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { arrange, moveSlot, neighbor, orderKey, pageCells, readLayouts, saveLayout, trim } from './order.ts'
+import { arrange, moveSlot, neighbor, orderKey, pageCells, positionOf, readLayouts, saveLayout, trim } from './order.ts'
 
 const cam = (id, location = 'A') => ({ cameraId: id, location })
 const ids = slots => slots.map(slot => slot?.cameraId ?? slot)
@@ -47,6 +47,12 @@ test('페이지 칸은 레이아웃 크기만큼이고 남는 칸은 빈자리�
   assert.deepEqual(pageCells(cells, '2x2', 2), ['d', 'e', null, null])
   assert.deepEqual(pageCells(cells, '1+5', 1), cells)
   assert.equal(pageCells(cells, '3x3', 1).length, 9)
+})
+test('전체 칸 번호를 몇 쪽 몇 번째 칸으로 바꾼다', () => {
+  assert.deepEqual(positionOf(0, '2x2'), { page: 1, cell: 1 })
+  assert.deepEqual(positionOf(5, '2x2'), { page: 2, cell: 2 })
+  assert.deepEqual(positionOf(6, '1+5'), { page: 2, cell: 1 })
+  assert.deepEqual(positionOf(17, '3x3'), { page: 2, cell: 9 })
 })
 test('2×2·3×3은 행과 열을 따라, 끝에서는 그대로 칸을 고른다', () => {
   assert.equal(neighbor(0, 'ArrowRight', '2x2'), 1)

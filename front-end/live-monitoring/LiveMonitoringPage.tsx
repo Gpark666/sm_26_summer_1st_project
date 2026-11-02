@@ -2,6 +2,7 @@ import { useRef, useState, type HTMLAttributes, type KeyboardEvent } from 'react
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { filterCameras, type Camera, type CameraSource } from '../camera-list/cameraApi'
 import { useCameraList } from '../shared/useCameraList'
+import CameraPicker from './CameraPicker'
 import LiveTile from './LiveTile'
 import LiveTopBar from './LiveTopBar'
 import { layoutLabels, layoutOptions, layouts, pageCount, parseLayout, parsePage, startView, type Layout } from './layout'
@@ -23,6 +24,8 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
   const [saved, setSaved] = useState(() => readLayouts())
   const [move, setMove] = useState<Move | null>(null)
   const [notice, setNotice] = useState('')
+  // 카메라 고르기 창을 연 칸(페이지 안 칸 번호). view가 바뀌면 닫힌다.
+  const [picking, setPicking] = useState<{ index: number, view: string } | null>(null)
   const grid = useRef<HTMLUListElement>(null)
   // 놓은 뒤 타일이 DOM에서 옮겨지며 생기는 blur를 취소로 보지 않는다.
   const settling = useRef(false)
@@ -41,6 +44,7 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
   const items = pageCells(slots, layout, page)
   const view = [layout, location, page].join('|')
   const active = move?.view === view ? move : null
+  const choosing = picking?.view === view ? picking : null
 
   // 레이아웃이나 위치를 바꾸면 1페이지로 돌아간다.
   function update(next: { layout?: Layout, location?: string, page?: number }) {
@@ -84,6 +88,21 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
     setSaved(current => ({ ...current, [layout]: { ...current[layout], [location]: [] } }))
     saveLayout(layout, location, null)
     setNotice(`${layoutLabels[layout]} · ${location || '전체 위치'} 배치를 기본 순서로 되돌렸습니다.`)
+  }
+  // 칸에서 카메라 고르기: 다른 페이지에 있는 카메라도 이 칸으로 가져온다.
+  function choose(index: number) {
+    setMove(null)
+    setPicking({ index, view })
+  }
+  function pick(camera: Camera) {
+    if (!choosing) return
+    setPicking(null)
+    settling.current = true
+    place(camera.cameraId, choosing.index)
+    requestAnimationFrame(() => {
+      grid.current?.querySelector<HTMLElement>(`[data-camera-id="${CSS.escape(camera.cameraId)}"]`)?.focus()
+      settling.current = false
+    })
   }
   function describe(index: number) {
     const item = items[index]
@@ -173,11 +192,16 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
       {items.map((item, index) => item
         ? <LiveTile key={item.cameraId} camera={item} source={source} onOpen={open}
           moving={moving(item.cameraId, index)} onKeyDown={event => keyDown(event, item, index)} onBlur={() => blur(item)}
-          dnd={{ ...drag(item, index), ...drop(index) }} />
-        // 빈 칸. 옮기는 중에는 놓을 수 있다고 알려 준다.
-        : <li key={'slot-' + (start + index)} aria-hidden="true"
+          dnd={{ ...drag(item, index), ...drop(index) }}
+          actions={<button className="vp-action" aria-label={`‘${item.name}’ 칸에 볼 카메라 바꾸기`} title="이 칸에 볼 카메라 바꾸기"
+            onClick={() => choose(index)}>⇄</button>} />
+        // 빈 칸. 옮기는 중에는 놓을 수 있다고 알려 주고, 평소에는 카메라를 골라 넣을 수 있다.
+        : <li key={'slot-' + (start + index)}
           className={'w01-empty' + (moving(null, index) === 'target' ? ' is-target' : '')}
-          {...drop(index)}>{active && <span>여기에 놓기</span>}</li>)}
+          {...drop(index)}>{active ? <span aria-hidden="true">여기에 놓기</span>
+            : <button className="w01-fill" aria-label={`${index + 1}번째 빈 칸에 카메라 넣기`} onClick={() => choose(index)}>+ 카메라 넣기</button>}</li>)}
     </ul>}
+    {choosing && <CameraPicker slot={start + choosing.index} layout={layout} slots={slots}
+      onPick={pick} onClose={() => setPicking(null)} />}
   </main>
 }

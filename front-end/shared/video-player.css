@@ -28,6 +28,8 @@
 .vp-bottom { bottom:0; color:#9aa0a6; background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.7)); }
 .vp-name { flex:1; min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .vp-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:12px; background:rgba(0,0,0,.6); font-weight:500; white-space:nowrap; }
+.vp-action { display:grid; place-items:center; width:24px; height:24px; padding:0; border:0; border-radius:12px; background:rgba(0,0,0,.6); color:#e8eaed; font:inherit; font-size:14px; line-height:1; cursor:pointer; }
+.vp-action:hover { background:#27344b; }
 .vp-badge::before { content:''; width:8px; height:8px; border-radius:50%; background:var(--vp-dot); }
 /* 1+5의 작은 타일처럼 낮은 타일은 Figma처럼 하단 바를 빼고, 재시도 버튼이 있는 덮개는 아이콘을 빼서 상단 바와 겹치지 않게 한다. */
 .vp { container-type: size; }

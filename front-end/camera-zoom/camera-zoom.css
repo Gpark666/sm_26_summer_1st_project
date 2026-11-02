@@ -1,0 +1,11 @@
+/* Figma Main / 타일 확대(42:6447) 기준. Top Bar·메시지는 W01(live-monitoring.css)과 같이 쓴다. */
+.w02-stage { flex:1; min-height:0; display:flex; padding:12px; }
+.w02-player { flex:1; min-width:0; min-height:0; }
+.w02-missing strong { display:block; color:var(--w01-text); font-size:16px; }
+.w02-missing p { margin:6px 0 12px; }
+.w02-missing button { margin-left:0; border:1px solid var(--w01-line); border-radius:7px; background:#191d23; color:var(--w01-text); padding:7px 12px; font:inherit; font-size:13px; cursor:pointer; }
+.w02-missing button:hover { background:#27344b; border-color:#7086a8; }
+@media(max-width:680px) {
+  .w02-stage { flex:none; display:block; }
+  .w02-player { flex:none; height:260px; }
+}

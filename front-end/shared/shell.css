@@ -1,0 +1,22 @@
+/* 화면 틀과 사이드바는 W01·W02·W03이 함께 쓴다. 클래스 이름은 W03에서 쓰던 것을 유지한다. */
+#root:has(> .w03-shell) { width: 100%; max-width: none; border: 0; text-align: left; }
+.w03-shell {
+  --surface: #181b21; --canvas: #101115; --line: #30343d; --muted: #aab1be;
+  color-scheme: dark; color: #eff1f5; background: var(--canvas);
+  font: 14px/1.5 system-ui, 'Malgun Gothic', sans-serif; letter-spacing: 0;
+}
+.w03-shell { display: grid; grid-template-columns: minmax(0,1fr) 210px; min-height: 100svh; }
+.w03-shell.collapsed { grid-template-columns: minmax(0,1fr) 48px; }
+.w03-shell aside * { box-sizing: border-box; }
+.w03-shell :focus-visible { outline:2px solid #80adff; outline-offset:2px; }
+.w03-side button:not(:disabled) { cursor:pointer; }
+.w03-side button:disabled { cursor:default; opacity:.62; }
+.w03-side { border-left:1px solid var(--line); padding:12px; background:var(--surface); }
+.w03-side .w03-toggle { width:100%; border:0; background:transparent; color:#d0d5df; font-size:24px; }
+.w03-side nav { display:grid; gap:4px; }
+.w03-side nav p { color:var(--muted); font-size:12px; margin:18px 10px 4px; }
+.w03-side nav button,.w03-side nav a { text-align:left; font:inherit; padding:10px 12px; border:0; border-radius:7px; background:transparent; color:inherit; text-decoration:none; }
+.w03-side nav a:hover { background:#202530; }
+.w03-side nav a[aria-current="page"] { color:#91b9ff; background:#202f47; font-weight:650; }
+@media(max-width:900px) { .w03-shell {grid-template-columns:minmax(0,1fr) 150px;} }
+@media(max-width:680px) { .w03-shell,.w03-shell.collapsed {display:block;} .w03-side {display:none;} }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, NavLink, Route, Routes, useNavigate } from 'react-router'
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router'
 import CameraListPage from '../camera-list/CameraListPage'
 import CameraZoomPage from '../camera-zoom/CameraZoomPage'
 import { demoSource, realSource } from '../camera-list/cameraApi'
@@ -16,11 +16,14 @@ const source = demo
 
 // 인증 연결 후에는 실제 로그인 사용자 ID를 scope에 포함한다.
 const scope = demo ? 'demo' : 'browser'
+// 관제 설정이 해시(#settings, #cameras)로 화면을 바꾸던 때의 링크를 새 경로로 보낸다.
+const legacyPaths: Record<string, string> = { '#settings': '/settings', '#cameras': '/cameras' }
 
 export default function App() {
   const [preferences, setPreferences] = useState(() => readPreferences(scope))
   const [collapsed, setCollapsed] = useState(preferences.value.sidebar === 'collapsed')
   const navigate = useNavigate()
+  const { hash, search } = useLocation()
   function applySettings(value: Preferences) {
     savePreferences(scope, value)
     setPreferences({ value, notice: '' })
@@ -40,7 +43,7 @@ export default function App() {
         onOpenLive={camera => navigate('/live/' + encodeURIComponent(camera.cameraId))} />} />
       <Route path="/settings" element={<MonitoringSettingsPage saved={preferences.value} source={source}
         initialNotice={preferences.notice} onSave={applySettings} />} />
-      <Route path="*" element={<Navigate to="/live" replace />} />
+      <Route path="*" element={<Navigate to={{ pathname: legacyPaths[hash] ?? '/live', search }} replace />} />
     </Routes>
     <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
   </div>

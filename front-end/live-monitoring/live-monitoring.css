@@ -29,7 +29,7 @@
 .w01-grid[data-layout="1+5"] { grid-template-columns:minmax(0,1fr) 280px; grid-template-rows:repeat(5,minmax(0,1fr)); }
 .w01-grid[data-layout="1+5"] > :first-child { grid-row:1 / -1; }
 .w01-tile,.w01-empty { min-width:0; min-height:0; border-radius:4px; }
-.w01-tile { cursor:pointer; }
+.w01-tile { cursor:grab; }
 .w01-tile:focus-visible { outline:2px solid #80adff; outline-offset:2px; }
 .w01-tile.is-source { opacity:.55; }
 .w01-tile.is-target { outline:2px solid #4c8dff; outline-offset:2px; }

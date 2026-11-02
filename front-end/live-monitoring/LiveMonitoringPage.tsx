@@ -130,15 +130,13 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
     setNotice('옮기기를 취소했습니다.')
   }
 
-  // 마우스: 상단 바를 끌어 다른 타일 위에 놓는다.
-  const handle = (camera: Camera, index: number): HTMLAttributes<HTMLDivElement> => ({
+  // 마우스: 타일 어디든 끌어 다른 칸에 놓는다. 마우스를 움직여야 시작돼서 더블클릭·재시도 버튼과 겹치지 않는다.
+  const drag = (camera: Camera, index: number): HTMLAttributes<HTMLLIElement> => ({
     draggable: true,
     onDragStart: event => {
-      const tile = event.currentTarget.closest('li')
-      if (tile) {
-        const box = tile.getBoundingClientRect()
-        event.dataTransfer.setDragImage(tile, event.clientX - box.left, event.clientY - box.top)
-      }
+      const tile = event.currentTarget
+      const box = tile.getBoundingClientRect()
+      event.dataTransfer.setDragImage(tile, event.clientX - box.left, event.clientY - box.top)
       event.dataTransfer.setData('text/plain', camera.cameraId)
       event.dataTransfer.effectAllowed = 'move'
       // dragstart 중에 DOM을 바꾸면 브라우저가 드래그를 취소할 수 있어 다음 틱에 표시한다.
@@ -180,7 +178,7 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
       {items.map((item, index) => item && item !== hidden
         ? <LiveTile key={item.cameraId} camera={item} source={source} onOpen={open}
           moving={moving(item.cameraId, index)} onKeyDown={event => keyDown(event, item, index)} onBlur={() => blur(item)}
-          handle={handle(item, index)} drop={drop(index)} />
+          dnd={{ ...drag(item, index), ...drop(index) }} />
         // 빈 칸은 놓을 수 있고, 다른 위치 카메라 자리는 비워 보이되 놓을 수 없다.
         : <li key={'slot-' + (start + index)} aria-hidden="true"
           className={'w01-empty' + (item === hidden ? ' is-other' : '') + (moving(null, index) === 'target' ? ' is-target' : '')}

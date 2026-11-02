@@ -13,7 +13,7 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
     {!collapsed && <nav aria-label="메인 메뉴">
       <p>관제</p>
       <NavLink to="/live">라이브 관제</NavLink><NavLink to="/cameras">카메라 목록</NavLink>
-      <button disabled>관제 설정</button>
+      <NavLink to="/settings">관제 설정</NavLink>
       <p>운영</p><button disabled>이벤트 히스토리</button><button disabled>감시 구역 설정</button>
     </nav>}
   </aside>

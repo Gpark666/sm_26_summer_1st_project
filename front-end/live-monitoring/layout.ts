@@ -10,6 +10,22 @@ export function parseLayout(value: string | null): Layout {
   return key && Object.hasOwn(layouts, key) ? key as Layout : '2x2'
 }
 
+// 관제 설정(W04)의 배치 표기(2×2)를 W01 쿼리 값(2x2)으로 바꾼다.
+// 1×1은 W02 배치라서, W01을 1×1로 열면 복귀할 때 W02가 반복되므로 2×2로 연다.
+export function preferredLayout(value: string): Layout {
+  return value === '1×1' ? '2x2' : parseLayout(value.replace('×', 'x'))
+}
+
+// 주소의 layout·location이 항상 우선이고, 없을 때만 관제 설정값을 쓴다.
+// location=(빈 값)은 사용자가 '전체 위치'를 고른 것이다.
+export function startView(query: URLSearchParams, preferred?: { layout: string, location: string }) {
+  const layout = query.get('layout')
+  return {
+    layout: layout !== null ? parseLayout(layout) : preferred ? preferredLayout(preferred.layout) : parseLayout(null),
+    location: query.get('location') ?? preferred?.location ?? '',
+  }
+}
+
 export function pageCount(total: number, layout: Layout) {
   return Math.max(1, Math.ceil(total / layouts[layout]))
 }

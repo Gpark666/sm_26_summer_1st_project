@@ -3,22 +3,24 @@ import { filterCameras, type Camera, type CameraSource } from '../camera-list/ca
 import { useCameraList } from '../shared/useCameraList'
 import LiveTile from './LiveTile'
 import LiveTopBar from './LiveTopBar'
-import { layoutOptions, layouts, pageCount, pageItems, parseLayout, parsePage, type Layout } from './layout'
+import { layoutOptions, layouts, pageCount, pageItems, parseLayout, parsePage, startView, type Layout } from './layout'
 
 type Props = {
   source: CameraSource
+  // 관제 설정(W04)에 저장한 기본 배치·위치. 주소에 값이 없을 때만 쓴다.
+  preferred?: { layout: string, location: string }
 }
 
-export default function LiveMonitoringPage({ source }: Props) {
+export default function LiveMonitoringPage({ source, preferred }: Props) {
   const { rows, loading, error, updated, refresh } = useCameraList(source)
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const current = useLocation()
 
   // 레이아웃·위치·페이지는 쿼리에 두어 W02에서 돌아올 때 같은 배치를 다시 그린다.
-  const layout = parseLayout(params.get('layout'))
+  const { layout, location: wanted } = startView(params, preferred)
   const locations = [...new Set(rows.map(row => row.location))]
-  const wanted = params.get('location') ?? ''
+  // 목록에 없는 위치(설정의 기본 위치 포함)는 전체 위치로 연다.
   const location = locations.includes(wanted) ? wanted : ''
   const shown = filterCameras(rows, '', location, '')
   const pages = pageCount(shown.length, layout)
@@ -30,10 +32,8 @@ export default function LiveMonitoringPage({ source }: Props) {
     setParams(previous => {
       const query = new URLSearchParams(previous)
       if (next.layout) query.set('layout', next.layout)
-      if (next.location !== undefined) {
-        if (next.location) query.set('location', next.location)
-        else query.delete('location')
-      }
+      // '전체 위치'도 빈 값으로 남겨 설정의 기본 위치로 되돌아가지 않게 한다.
+      if (next.location !== undefined) query.set('location', next.location)
       query.set('page', String(next.page ?? 1))
       return query
     }, { replace: true })

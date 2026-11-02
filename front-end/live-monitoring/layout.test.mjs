@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { parseLayout, pageCount, parsePage, pageItems, pageOf } from './layout.ts'
+import { parseLayout, pageCount, parsePage, pageItems, pageOf, preferredLayout, startView } from './layout.ts'
 
 const rows = Array.from({ length: 18 }, (_, index) => index + 1)
 test('레이아웃 쿼리를 읽고 잘못된 값은 2×2로 본다', () => {
@@ -38,4 +38,24 @@ test('W02에서 돌아갈 때 카메라가 들어 있는 페이지를 계산한�
   for (const index of [0, 5, 6, 11, 12, 17]) {
     assert.ok(pageItems(rows, '1+5', pageOf(index, '1+5')).includes(rows[index]))
   }
+})
+test('관제 설정의 배치 표기를 W01 값으로 바꾸고 1×1은 2×2로 연다', () => {
+  assert.equal(preferredLayout('1+5'), '1+5')
+  assert.equal(preferredLayout('2×2'), '2x2')
+  assert.equal(preferredLayout('3×3'), '3x3')
+  assert.equal(preferredLayout('1×1'), '2x2')
+  assert.equal(preferredLayout('4×4'), '2x2')
+})
+test('주소의 layout·location이 우선이고 없을 때만 설정값을 쓴다', () => {
+  const preferred = { layout: '3×3', location: '본관 2층' }
+  const query = value => new URLSearchParams(value)
+  assert.deepEqual(startView(query(''), preferred), { layout: '3x3', location: '본관 2층' })
+  assert.deepEqual(startView(query('layout=1%2B5&location=지하 1층'), preferred), { layout: '1+5', location: '지하 1층' })
+  assert.deepEqual(startView(query('layout=2x2'), preferred), { layout: '2x2', location: '본관 2층' })
+  // '전체 위치'를 고른 주소는 설정 위치로 되돌아가지 않는다.
+  assert.deepEqual(startView(query('location='), preferred), { layout: '3x3', location: '' })
+  // 주소의 잘못된 배치는 설정값이 아니라 기본 2×2로 본다.
+  assert.equal(startView(query('layout=4x4'), preferred).layout, '2x2')
+  assert.deepEqual(startView(query(''), { layout: '1×1', location: '' }), { layout: '2x2', location: '' })
+  assert.deepEqual(startView(query('')), { layout: '2x2', location: '' })
 })

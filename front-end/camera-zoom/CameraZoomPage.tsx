@@ -41,8 +41,7 @@ export default function CameraZoomPage({ source }: Props) {
   function returnTo(nextLayout: Layout, nextLocation: string, at: number): From {
     const query = new URLSearchParams(context)
     query.set('layout', nextLayout)
-    if (nextLocation) query.set('location', nextLocation)
-    else query.delete('location')
+    query.set('location', nextLocation)
     query.set('page', String(pageOf(at, nextLayout)))
     return { pathname: '/live', search: '?' + query }
   }

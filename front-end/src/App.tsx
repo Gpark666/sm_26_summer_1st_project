@@ -34,7 +34,7 @@ export default function App() {
       <NavLink to="/settings">관제 설정</NavLink>
     </nav>
     <Routes>
-      <Route path="/live" element={<LiveMonitoringPage source={source} />} />
+      <Route path="/live" element={<LiveMonitoringPage source={source} preferred={preferences.value} />} />
       <Route path="/live/:cameraId" element={<CameraZoomPage source={source} />} />
       <Route path="/cameras" element={<CameraListPage source={source}
         onOpenLive={camera => navigate('/live/' + encodeURIComponent(camera.cameraId))} />} />

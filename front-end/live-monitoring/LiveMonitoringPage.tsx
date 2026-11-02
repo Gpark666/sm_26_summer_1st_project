@@ -54,8 +54,15 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
       return query
     }, { replace: true })
   }
-  const open = (camera: Camera) =>
-    navigate('/live/' + encodeURIComponent(camera.cameraId), { state: { from: current } })
+  // W02가 지금 보이는 배치(관제 설정값으로 정해진 경우 포함)를 이어받도록 실제 배치·위치·페이지를 넘긴다.
+  function open(camera: Camera) {
+    const query = new URLSearchParams(current.search)
+    query.set('layout', layout)
+    query.set('location', location)
+    query.set('page', String(page))
+    navigate('/live/' + encodeURIComponent(camera.cameraId),
+      { state: { from: { pathname: current.pathname, search: '?' + query } } })
+  }
 
   // 같은 페이지의 index번째 칸에 놓는다. 카메라 칸이면 맞바꾸고, 빈 칸이면 그 칸으로 옮긴다.
   // 1+5에서 큰 칸에 놓으면 메인 카메라가 바뀐다. 배치는 지금 그리드에만 저장한다.

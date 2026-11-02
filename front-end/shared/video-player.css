@@ -22,6 +22,7 @@
 .vp-retry { border:1px solid #2a2f38; border-radius:8px; background:#171a20; color:#fff; padding:8px 16px; font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
 .vp-retry:hover { background:#202530; border-color:#3a414d; }
 .vp-top,.vp-bottom { position:absolute; left:0; right:0; display:flex; align-items:center; gap:8px; padding:8px; }
+.vp-top[draggable="true"] { cursor:grab; }
 .vp-top { top:0; background:linear-gradient(rgba(0,0,0,.7), rgba(0,0,0,0)); }
 .vp-bottom { bottom:0; color:#9aa0a6; background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.7)); }
 .vp-name { flex:1; min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

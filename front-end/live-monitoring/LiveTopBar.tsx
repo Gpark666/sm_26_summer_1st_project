@@ -17,6 +17,8 @@ type Props = {
   onNext?: () => void
   // W02에서는 제목이 복귀 버튼이 된다.
   onBack?: () => void
+  // W01에서 타일 순서를 바꾼 적이 있을 때만 넘긴다.
+  onResetOrder?: () => void
 }
 
 export default function LiveTopBar(props: Props) {
@@ -42,6 +44,7 @@ export default function LiveTopBar(props: Props) {
           <img src={nextIcon} alt="" width={20} height={20} />
         </button>
       </nav>
+      {props.onResetOrder && <button className="w01-reset" onClick={props.onResetOrder}>기본 순서로 되돌리기</button>}
       <span className="w01-autofocus"><img src={autoFocusIcon} alt="" width={20} height={20} />자동 포커스 ON</span>
     </div>
   </header>

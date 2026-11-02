@@ -16,6 +16,3 @@ def get_camera_stream():
         raise VideoReadException()
         
     return frame
-
-# 에러 핸들러 일괄 등록
-register_exception_handlers(app)

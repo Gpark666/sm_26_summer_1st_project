@@ -160,6 +160,9 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
   const moving = (id: string | null, index: number) =>
     !active ? undefined : active.id === id ? 'source' : active.target === index ? 'target' : undefined
   const visible = slots.some(row => row && (!location || row.location === location))
+  // 평소에는 다른 위치 칸만 표시하고, 옮기는 중에는 놓을 수 있는 칸과 없는 칸을 알려 준다.
+  const slotLabel = (item: null | typeof hidden) =>
+    active ? (item === hidden ? '다른 위치 · 놓을 수 없음' : '여기에 놓기') : item === hidden ? '다른 위치' : ''
 
   return <main className="w01">
     <LiveTopBar layout={layout} layoutOptions={layoutOptions} onLayout={value => update({ layout: parseLayout(value) })}
@@ -174,7 +177,7 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
     {!loading && !error && !rows.length && <p className="w01-message">조회할 수 있는 카메라가 없습니다.</p>}
     {updated && rows.length > 0 && !shown.length && <div className="w01-message">선택한 위치에 카메라가 없습니다.
       <button onClick={() => update({ location: '' })}>전체 위치 보기</button></div>}
-    {visible && <ul ref={grid} className="w01-grid" data-layout={layout} aria-label={'카메라 ' + page + '페이지'}>
+    {visible && <ul ref={grid} className={'w01-grid' + (active ? ' is-moving' : '')} data-layout={layout} aria-label={'카메라 ' + page + '페이지'}>
       {items.map((item, index) => item && item !== hidden
         ? <LiveTile key={item.cameraId} camera={item} source={source} onOpen={open}
           moving={moving(item.cameraId, index)} onKeyDown={event => keyDown(event, item, index)} onBlur={() => blur(item)}
@@ -182,7 +185,7 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
         // 빈 칸은 놓을 수 있고, 다른 위치 카메라 자리는 비워 보이되 놓을 수 없다.
         : <li key={'slot-' + (start + index)} aria-hidden="true"
           className={'w01-empty' + (item === hidden ? ' is-other' : '') + (moving(null, index) === 'target' ? ' is-target' : '')}
-          {...(item === hidden ? {} : drop(index))}>{item === hidden && <span>다른 위치</span>}</li>)}
+          {...(item === hidden ? {} : drop(index))}>{slotLabel(item) && <span>{slotLabel(item)}</span>}</li>)}
     </ul>}
   </main>
 }

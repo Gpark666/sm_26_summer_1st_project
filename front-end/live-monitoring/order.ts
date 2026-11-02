@@ -3,15 +3,13 @@ import { layouts, type Layout } from './layout.ts'
 
 // 칸 번호(페이지를 이어 붙인 번호) → 카메라 ID. null은 빈자리다.
 export type Slots = (string | null)[]
-export type SavedLayouts = Partial<Record<Layout, Slots>>
-// 위치 필터 중 다른 위치 카메라가 있는 칸. 칸 번호는 유지하고 비워 보이되 놓을 수 없다.
-export const hidden = 'hidden'
-export type Cell<T> = T | null | typeof hidden
+// 그리드(1+5, 2×2, 3×3) × 위치(''는 전체 위치)마다 칸 배치를 따로 저장한다.
+// 한 그리드·위치에서 바꿔도 다른 조합은 그대로다.
+export type SavedLayouts = Partial<Record<Layout, Record<string, Slots>>>
 
 type StorageAccess = () => Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 const browserStorage: StorageAccess = () => window.localStorage
-// 그리드(1+5, 2×2, 3×3)마다 칸 배치를 따로 저장한다. 한 그리드를 바꿔도 다른 그리드는 그대로다.
-export const orderKey = 'accessguard:live-order:v2'
+export const orderKey = 'accessguard:live-order:v3'
 
 // 끝에 남은 빈자리는 저장하지 않는다.
 export function trim<T>(slots: readonly (T | null)[]): (T | null)[] {
@@ -45,22 +43,10 @@ export function moveSlot(slots: Slots, from: number, to: number): Slots {
   return trim(next)
 }
 
-// 위치 필터를 걸어도 칸 번호는 그대로 두고, 다른 위치 카메라 칸은 hidden으로 바꾼다.
-export function hideOthers<T>(slots: readonly (T | null)[], visible: (item: T) => boolean): Cell<T>[] {
-  return slots.map(item => item === null || visible(item) ? item : hidden)
-}
-
-// 보여 줄 칸 수. 필터 중에는 마지막으로 보이는 카메라가 있는 칸까지만 센다.
-export function cellCount<T>(cells: readonly Cell<T>[]) {
-  let end = cells.length
-  while (end > 0 && (cells[end - 1] === null || cells[end - 1] === hidden)) end--
-  return cells.some(cell => cell === hidden) ? end : cells.length
-}
-
 // page 페이지의 칸들. 마지막 페이지의 남는 칸은 빈자리(null)로 채운다.
-export function pageCells<T>(cells: readonly Cell<T>[], layout: Layout, page: number): Cell<T>[] {
+export function pageCells<T>(slots: readonly (T | null)[], layout: Layout, page: number): (T | null)[] {
   const size = layouts[layout]
-  return Array.from({ length: size }, (_, index) => cells[(page - 1) * size + index] ?? null)
+  return Array.from({ length: size }, (_, index) => slots[(page - 1) * size + index] ?? null)
 }
 
 // 키보드로 놓을 칸을 고른다. 1+5는 큰 칸(0) 오른쪽에 작은 칸(1~5)이 세로로 있다. 끝에서는 움직이지 않는다.
@@ -84,16 +70,20 @@ export function neighbor(index: number, key: string, layout: Layout) {
 
 const isSlots = (value: unknown): value is Slots =>
   Array.isArray(value) && value.every(id => id === null || typeof id === 'string')
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
 
-// 읽지 못하거나 형식이 다른 그리드는 기본 순서(저장 없음)로 본다.
+// 읽지 못하거나 형식이 다른 조합은 기본 순서(저장 없음)로 본다.
 export function readLayouts(storage: StorageAccess = browserStorage): SavedLayouts {
   try {
     const parsed: unknown = JSON.parse(storage().getItem(orderKey) ?? '{}')
-    if (typeof parsed !== 'object' || parsed === null) return {}
+    if (!isRecord(parsed)) return {}
     const saved: SavedLayouts = {}
     for (const layout of Object.keys(layouts) as Layout[]) {
-      const slots = (parsed as Record<string, unknown>)[layout]
-      if (isSlots(slots)) saved[layout] = slots
+      const byLocation = parsed[layout]
+      if (!isRecord(byLocation)) continue
+      const valid = Object.entries(byLocation).filter((entry): entry is [string, Slots] => isSlots(entry[1]))
+      if (valid.length) saved[layout] = Object.fromEntries(valid)
     }
     return saved
   } catch {
@@ -101,12 +91,15 @@ export function readLayouts(storage: StorageAccess = browserStorage): SavedLayou
   }
 }
 
-// 한 그리드의 배치만 바꾼다. null이면 그 그리드를 기본 순서로 되돌린다.
+// 한 그리드·위치의 배치만 바꾼다. null이면 그 조합을 기본 순서로 되돌린다.
 // 저장하지 못하면 false를 돌려주고 화면의 배치는 그대로 쓴다.
-export function saveLayout(layout: Layout, slots: Slots | null, storage: StorageAccess = browserStorage) {
+export function saveLayout(layout: Layout, location: string, slots: Slots | null, storage: StorageAccess = browserStorage) {
   try {
     const saved = readLayouts(storage)
-    if (slots) saved[layout] = slots
+    const byLocation = { ...saved[layout] }
+    if (slots) byLocation[location] = slots
+    else delete byLocation[location]
+    if (Object.keys(byLocation).length) saved[layout] = byLocation
     else delete saved[layout]
     if (Object.keys(saved).length) storage().setItem(orderKey, JSON.stringify(saved))
     else storage().removeItem(orderKey)

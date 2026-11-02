@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { arrange, cellCount, hidden, hideOthers, moveSlot, neighbor, orderKey, pageCells, readLayouts, saveLayout, trim } from './order.ts'
+import { arrange, moveSlot, neighbor, orderKey, pageCells, readLayouts, saveLayout, trim } from './order.ts'
 
 const cam = (id, location = 'A') => ({ cameraId: id, location })
 const ids = slots => slots.map(slot => slot?.cameraId ?? slot)
@@ -33,14 +33,13 @@ test('카메라 칸으로 옮기면 맞바꾸고, 빈 칸으로 옮기면 원래
   assert.deepEqual(moveSlot(['a', null], 1, 0), ['a'])
   assert.deepEqual(moveSlot(['a', 'b'], 1, 1), ['a', 'b'])
 })
-test('위치 필터 중에도 칸 번호를 유지하고 다른 위치 칸은 hidden으로 표시한다', () => {
-  const slots = [cam('a', 'A'), null, cam('b', 'B'), cam('c', 'A'), cam('d', 'B')]
-  const cells = hideOthers(slots, row => row.location === 'A')
-  assert.deepEqual(ids(cells), ['a', null, hidden, 'c', hidden])
-  // 필터 중에는 마지막으로 보이는 카메라 칸까지만 센다
-  assert.equal(cellCount(cells), 4)
-  assert.equal(cellCount(hideOthers(slots, () => true)), 5)
-  assert.equal(cellCount(hideOthers(slots, () => false)), 0)
+test('위치 필터를 걸면 그 위치 카메라만 그 위치 배치대로 놓는다', () => {
+  const rows = [cam('a', 'A'), cam('b', 'B'), cam('c', 'A'), cam('d', 'B')]
+  const inA = rows.filter(row => row.location === 'A')
+  assert.deepEqual(ids(arrange(inA)), ['a', 'c'])
+  assert.deepEqual(ids(arrange(inA, ['c', null, 'a'])), ['c', null, 'a'])
+  // 다른 위치 카메라 ID가 저장돼 있어도 그 위치 목록에 없으면 빈자리다
+  assert.deepEqual(ids(arrange(inA, ['b', 'a'])), [null, 'a', 'c'])
 })
 test('페이지 칸은 레이아웃 크기만큼이고 남는 칸은 빈자리다', () => {
   const cells = ['a', null, 'b', 'c', 'd', 'e']
@@ -71,26 +70,28 @@ test('1+5는 큰 칸과 작은 칸 사이를 좌우로, 작은 칸끼리는 위�
   assert.equal(neighbor(0, 'ArrowDown', '1+5'), 0)
   assert.equal(neighbor(3, 'ArrowRight', '1+5'), 3)
 })
-test('그리드별로 배치를 저장해 한 그리드를 바꿔도 다른 그리드는 그대로다', () => {
+test('그리드·위치 조합별로 배치를 저장해 한 조합을 바꿔도 다른 조합은 그대로다', () => {
   const db = memory()
   assert.deepEqual(readLayouts(db), {})
-  assert.equal(saveLayout('2x2', ['b', null, 'a'], db), true)
-  assert.equal(saveLayout('3x3', ['c'], db), true)
-  assert.deepEqual(readLayouts(db), { '2x2': ['b', null, 'a'], '3x3': ['c'] })
-  assert.equal(saveLayout('2x2', null, db), true)
-  assert.deepEqual(readLayouts(db), { '3x3': ['c'] })
-  assert.equal(saveLayout('3x3', null, db), true)
+  assert.equal(saveLayout('2x2', '', ['b', null, 'a'], db), true)
+  assert.equal(saveLayout('2x2', '본관 1층', ['a'], db), true)
+  assert.equal(saveLayout('3x3', '', ['c'], db), true)
+  assert.deepEqual(readLayouts(db), { '2x2': { '': ['b', null, 'a'], '본관 1층': ['a'] }, '3x3': { '': ['c'] } })
+  assert.equal(saveLayout('2x2', '', null, db), true)
+  assert.deepEqual(readLayouts(db), { '2x2': { '본관 1층': ['a'] }, '3x3': { '': ['c'] } })
+  assert.equal(saveLayout('2x2', '본관 1층', null, db), true)
+  assert.equal(saveLayout('3x3', '', null, db), true)
   assert.equal(db().getItem(orderKey), null)
 })
 test('잘못된 저장값이나 저장소 오류는 기본 순서로 본다', () => {
   const db = memory()
-  for (const raw of ['{', 'null', '[]', '{"2x2":[1]}', '{"4x4":["a"]}']) {
+  for (const raw of ['{', 'null', '[]', '{"2x2":["a"]}', '{"2x2":{"":[1]}}', '{"4x4":{"":["a"]}}']) {
     db().setItem(orderKey, raw)
     assert.deepEqual(readLayouts(db), {})
   }
-  db().setItem(orderKey, '{"2x2":["a",null],"3x3":"x"}')
-  assert.deepEqual(readLayouts(db), { '2x2': ['a', null] })
+  db().setItem(orderKey, '{"2x2":{"":["a",null],"B":"x"},"3x3":"x"}')
+  assert.deepEqual(readLayouts(db), { '2x2': { '': ['a', null] } })
   const blocked = () => { throw new Error('storage blocked') }
   assert.deepEqual(readLayouts(blocked), {})
-  assert.equal(saveLayout('2x2', ['a'], blocked), false)
+  assert.equal(saveLayout('2x2', '', ['a'], blocked), false)
 })

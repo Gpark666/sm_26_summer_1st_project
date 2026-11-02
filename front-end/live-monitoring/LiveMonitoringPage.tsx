@@ -5,7 +5,7 @@ import { useCameraList } from '../shared/useCameraList'
 import LiveTile from './LiveTile'
 import LiveTopBar from './LiveTopBar'
 import { layoutLabels, layoutOptions, layouts, pageCount, parseLayout, parsePage, startView, type Layout } from './layout'
-import { arrange, cellCount, hidden, hideOthers, moveSlot, neighbor, pageCells, readLayouts, saveLayout } from './order'
+import { arrange, moveSlot, neighbor, pageCells, readLayouts, saveLayout } from './order'
 
 type Props = {
   source: CameraSource
@@ -33,13 +33,12 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
   // 목록에 없는 위치(설정의 기본 위치 포함)는 전체 위치로 연다.
   const location = locations.includes(wanted) ? wanted : ''
   const shown = filterCameras(rows, '', location, '')
-  // 그리드마다 저장한 칸 배치. 위치 필터 중에도 칸 번호는 그대로 두고 다른 위치 칸은 비워 보인다.
-  const slots = arrange(rows, saved[layout])
-  const cells = location ? hideOthers(slots, row => row.location === location) : slots
-  const pages = pageCount(cellCount(cells), layout)
+  // 그리드·위치(전체 위치 포함)마다 저장한 칸 배치. 필터를 걸면 그 위치 카메라만 그 위치 배치대로 놓는다.
+  const slots = arrange(shown, saved[layout]?.[location])
+  const pages = pageCount(slots.length, layout)
   const page = parsePage(params.get('page'), pages)
   const start = (page - 1) * layouts[layout]
-  const items = pageCells(cells, layout, page)
+  const items = pageCells(slots, layout, page)
   const view = [layout, location, page].join('|')
   const active = move?.view === view ? move : null
 
@@ -65,31 +64,30 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
   }
 
   // 같은 페이지의 index번째 칸에 놓는다. 카메라 칸이면 맞바꾸고, 빈 칸이면 그 칸으로 옮긴다.
-  // 1+5에서 큰 칸에 놓으면 메인 카메라가 바뀐다. 배치는 지금 그리드에만 저장한다.
+  // 1+5에서 큰 칸에 놓으면 메인 카메라가 바뀐다. 배치는 지금 그리드·위치 조합에만 저장한다.
   function place(id: string, index: number) {
     setMove(null)
     const from = slots.findIndex(row => row?.cameraId === id)
     const picked = slots[from]
     const other = items[index]
-    if (!picked || other === hidden || from === start + index) {
+    if (!picked || from === start + index) {
       setNotice('제자리에 놓았습니다.')
       return
     }
     const next = moveSlot(slots.map(row => row?.cameraId ?? null), from, start + index)
-    setSaved(current => ({ ...current, [layout]: next }))
+    setSaved(current => ({ ...current, [layout]: { ...current[layout], [location]: next } }))
     setNotice((other ? `‘${picked.name}’, ‘${other.name}’ 카메라의 자리를 바꿨습니다.`
       : `‘${picked.name}’ 카메라를 ${index + 1}번째 빈 칸으로 옮겼습니다.`) +
-      (saveLayout(layout, next) ? '' : ' 브라우저에 저장하지 못해 이 화면에서만 적용됩니다.'))
+      (saveLayout(layout, location, next) ? '' : ' 브라우저에 저장하지 못해 이 화면에서만 적용됩니다.'))
   }
   function resetOrder() {
-    setSaved(current => ({ ...current, [layout]: undefined }))
-    saveLayout(layout, null)
-    setNotice(layoutLabels[layout] + ' 배치를 기본 순서로 되돌렸습니다.')
+    setSaved(current => ({ ...current, [layout]: { ...current[layout], [location]: [] } }))
+    saveLayout(layout, location, null)
+    setNotice(`${layoutLabels[layout]} · ${location || '전체 위치'} 배치를 기본 순서로 되돌렸습니다.`)
   }
   function describe(index: number) {
     const item = items[index]
-    return `${index + 1}번째 칸, ` + (item === hidden ? '다른 위치 카메라 자리라서 놓을 수 없습니다'
-      : item ? `‘${item.name}’` : '빈 칸')
+    return `${index + 1}번째 칸, ` + (item ? `‘${item.name}’` : '빈 칸')
   }
 
   // 키보드: Space로 집기 → 방향키로 칸 고르기 → Space로 놓기, Esc로 취소
@@ -111,8 +109,6 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
       setNotice(describe(target))
     } else if (event.key === ' ') {
       event.preventDefault()
-      // 다른 위치 카메라 자리는 놓을 수 없어 집은 상태를 유지한다.
-      if (items[active.target] === hidden) return setNotice(describe(active.target))
       settling.current = true
       place(camera.cameraId, active.target)
       requestAnimationFrame(() => {
@@ -159,10 +155,6 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
   })
   const moving = (id: string | null, index: number) =>
     !active ? undefined : active.id === id ? 'source' : active.target === index ? 'target' : undefined
-  const visible = slots.some(row => row && (!location || row.location === location))
-  // 평소에는 다른 위치 칸만 표시하고, 옮기는 중에는 놓을 수 있는 칸과 없는 칸을 알려 준다.
-  const slotLabel = (item: null | typeof hidden) =>
-    active ? (item === hidden ? '다른 위치 · 놓을 수 없음' : '여기에 놓기') : item === hidden ? '다른 위치' : ''
 
   return <main className="w01">
     <LiveTopBar layout={layout} layoutOptions={layoutOptions} onLayout={value => update({ layout: parseLayout(value) })}
@@ -170,22 +162,22 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
       unit="페이지" position={page + ' / ' + pages}
       onPrevious={page > 1 ? () => update({ page: page - 1 }) : undefined}
       onNext={page < pages ? () => update({ page: page + 1 }) : undefined}
-      onResetOrder={saved[layout]?.length ? resetOrder : undefined} />
+      onResetOrder={saved[layout]?.[location]?.length ? resetOrder : undefined} />
     <p className="w01-sr" aria-live="polite">{notice}</p>
     {error && <div role="alert" className="w01-alert">목록 조회 실패 · {error} {updated && '마지막으로 조회한 목록을 표시합니다.'} <button onClick={refresh}>다시 조회</button></div>}
     {loading && !updated && <p role="status" className="w01-message">카메라 목록을 불러오는 중입니다.</p>}
     {!loading && !error && !rows.length && <p className="w01-message">조회할 수 있는 카메라가 없습니다.</p>}
     {updated && rows.length > 0 && !shown.length && <div className="w01-message">선택한 위치에 카메라가 없습니다.
       <button onClick={() => update({ location: '' })}>전체 위치 보기</button></div>}
-    {visible && <ul ref={grid} className={'w01-grid' + (active ? ' is-moving' : '')} data-layout={layout} aria-label={'카메라 ' + page + '페이지'}>
-      {items.map((item, index) => item && item !== hidden
+    {shown.length > 0 && <ul ref={grid} className={'w01-grid' + (active ? ' is-moving' : '')} data-layout={layout} aria-label={'카메라 ' + page + '페이지'}>
+      {items.map((item, index) => item
         ? <LiveTile key={item.cameraId} camera={item} source={source} onOpen={open}
           moving={moving(item.cameraId, index)} onKeyDown={event => keyDown(event, item, index)} onBlur={() => blur(item)}
           dnd={{ ...drag(item, index), ...drop(index) }} />
-        // 빈 칸은 놓을 수 있고, 다른 위치 카메라 자리는 비워 보이되 놓을 수 없다.
+        // 빈 칸. 옮기는 중에는 놓을 수 있다고 알려 준다.
         : <li key={'slot-' + (start + index)} aria-hidden="true"
-          className={'w01-empty' + (item === hidden ? ' is-other' : '') + (moving(null, index) === 'target' ? ' is-target' : '')}
-          {...(item === hidden ? {} : drop(index))}>{slotLabel(item) && <span>{slotLabel(item)}</span>}</li>)}
+          className={'w01-empty' + (moving(null, index) === 'target' ? ' is-target' : '')}
+          {...drop(index)}>{active && <span>여기에 놓기</span>}</li>)}
     </ul>}
   </main>
 }

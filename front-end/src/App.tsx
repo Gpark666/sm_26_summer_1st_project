@@ -8,8 +8,10 @@ import MonitoringSettingsPage from '../monitoring-settings/MonitoringSettingsPag
 import { readPreferences, savePreferences, type Preferences } from '../monitoring-settings/settings'
 import Sidebar from '../shared/Sidebar'
 
-// 개발용 예시는 개발 서버에서만 허용한다. 배포 빌드는 항상 실제 API를 사용한다.
-const demo = import.meta.env.DEV && import.meta.env.VITE_CAMERA_MODE !== 'api'
+// 데스크톱 시연 빌드에서는 백엔드 없이 예시 카메라를 표시한다.
+const demo =
+  import.meta.env.MODE === 'desktop-demo' ||
+  (import.meta.env.DEV && import.meta.env.VITE_CAMERA_MODE !== 'api')
 const source = demo
   ? demoSource(new URLSearchParams(window.location.search).get('scenario') ?? '')
   : realSource(import.meta.env.VITE_CAMERA_API_BASE || '/api/v1')

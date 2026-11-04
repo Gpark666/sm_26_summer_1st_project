@@ -4,6 +4,7 @@ from typing import Dict, Literal, Set
 
 import cv2
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
+from aiortc.contrib.media import MediaRelay
 from aiortc.mediastreams import MediaStreamError
 from av import VideoFrame
 
@@ -106,7 +107,9 @@ class VideoService:
     def __init__(self):
         self.peer_connections: Set[RTCPeerConnection] = set()
         self.sources: Dict[RTCPeerConnection, CameraSource] = {}
+        self.incoming_sources: Dict[RTCPeerConnection, Set[WebRTCSource]] = {}
         self.incoming_tasks: Set[asyncio.Task[None]] = set()
+        self.relay = MediaRelay()
 
     async def create_answer(
         self,
@@ -118,15 +121,27 @@ class VideoService:
         peer_connection = RTCPeerConnection()
         self.peer_connections.add(peer_connection)
 
+        @peer_connection.on("connectionstatechange")
+        async def on_connectionstatechange() -> None:
+            if peer_connection.connectionState in {
+                "failed",
+                "closed",
+                "disconnected",
+            }:
+                await self.close_connection(peer_connection)
+
         @peer_connection.on("track")
         def on_track(track: MediaStreamTrack) -> None:
             if camera_type != "webrtc" or track.kind != "video":
                 track.stop()
                 return
 
-            source = WebRTCSource(track)
-            self.sources[peer_connection] = source
-            task = asyncio.create_task(self._consume_incoming_video(source))
+            relayed_track = self.relay.subscribe(track)
+            peer_connection.addTrack(relayed_track)
+
+            ai_source = WebRTCSource(self.relay.subscribe(track))
+            self.incoming_sources.setdefault(peer_connection, set()).add(ai_source)
+            task = asyncio.create_task(self._consume_for_ai(ai_source))
             self.incoming_tasks.add(task)
             task.add_done_callback(self.incoming_tasks.discard)
 
@@ -157,17 +172,27 @@ class VideoService:
             await self.close_connection(peer_connection)
             raise StreamDisconnectedException() from exc
 
-    async def _consume_incoming_video(self, source: WebRTCSource) -> None:
+    async def _consume_for_ai(self, source: WebRTCSource) -> None:
         try:
             while True:
-                await source.read()
+                frame = await source.read()
+                await self._send_to_ai_server(frame)
         except (StreamDisconnectedException, VideoReadException):
             source.close()
-
+#ai서버 생길 시 고칠 부분========!!!
+#ai서버 생길 시 고칠 부분========!!!
+    async def _send_to_ai_server(self, frame: VideoFrame) -> None: #ai서버 생길 시 고칠 부분========!!!
+        """AI 서버 연동 지점입니다. 연동 전에는 영상을 소비하기만 합니다."""
+        await asyncio.sleep(0)
+#ai서버 생길 시 고칠 부분========!!!
+#ai서버 생길 시 고칠 부분========!!!
     async def close_connection(self, peer_connection: RTCPeerConnection) -> None:
         source = self.sources.pop(peer_connection, None)
         if source:
             source.close()
+
+        for incoming_source in self.incoming_sources.pop(peer_connection, set()):
+            incoming_source.close()
 
         self.peer_connections.discard(peer_connection)
         await peer_connection.close()

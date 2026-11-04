@@ -18,7 +18,7 @@ routers -> services -> db
 
 **작업 중 추가 사항 공지**
 1. fastapi의 패키지, uvicorn이 필요합니다.
-pip install fastapi "uvicorn[standard]" sqlalchemy pymysql cryptography python-dotenv pyjwt "passlib[bcrypt]" "bcrypt==4.0.1" opencv-python
+pip install fastapi "uvicorn[standard]" sqlalchemy pymysql cryptography python-dotenv pyjwt "passlib[bcrypt]" "bcrypt==4.0.1" opencv-python aiortc av
 위 코드를 사용해 install해주세요.
 
 2. 개인 로컬에 .venv를 설정해주세요(필요시)
@@ -26,3 +26,5 @@ pip install fastapi "uvicorn[standard]" sqlalchemy pymysql cryptography python-d
 ex> pip 26.2.2 from C:... \sm_26_summer_1st_project\.venv\Lib\site-packages\pip (python 3.14)
 (.venv)
 
+**추가2**
+python -m pip install aiortc av

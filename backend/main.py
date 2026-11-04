@@ -1,12 +1,15 @@
 from fastapi import FastAPI
+
 from backend.units.error_handler import register_exception_handlers
+from backend.routers.video_router import router as video_router
 
 app = FastAPI()
 
-# 에러 핸들러 등록
 register_exception_handlers(app)
 
-#서버 상태 체크
-@app.get("/") 
+# 서버 상태 체크
+@app.get("/")
 def root():
     return {"message": "API Server is running"}
+
+app.include_router(video_router)

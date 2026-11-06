@@ -1,5 +1,9 @@
+import logging
+
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 # ====
 # 1. 커스텀 예외 클래스 정의 (units/exceptions.py)
@@ -52,23 +56,37 @@ def register_exception_handlers(app: FastAPI):
     # 우리가 정의한 커스텀 에러 공통 처리 (요구사항 포맷 반영)
     @app.exception_handler(CustomBaseException)
     async def custom_exception_handler(request: Request, exc: CustomBaseException):
+        # 프론트엔드에는 일관된 JSON을 보내고, CMD에는 상태 변경을 기록합니다.
+        logger.warning(
+            "요청 처리 실패: method=%s path=%s status=%s error_code=%s message=%s",
+            request.method,
+            request.url.path,
+            exc.status_code,
+            exc.error_code,
+            exc.message,
+        )
         return JSONResponse(
             status_code=exc.status_code,
             content={
                 "status": exc.status_code,
                 "error_code": exc.error_code,
-                "message": exc.message
+                "message": exc.message,
             }
         )
 
     # 예상치 못한 시스템 500 에러 처리
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
+        logger.exception(
+            "처리되지 않은 서버 오류: method=%s path=%s",
+            request.method,
+            request.url.path,
+        )
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "status": 500,
                 "error_code": "INTERNAL_SERVER_ERROR",
-                "message": "서버 내부에서 알 수 없는 연결 오류가 발생했습니다."
+                "message": "서버 내부에서 알 수 없는 연결 오류가 발생했습니다.",
             }
         )

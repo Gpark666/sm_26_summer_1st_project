@@ -34,6 +34,10 @@ $env:AUTH_PASSWORD = "개발용 비밀번호"
 JWT를 발급받습니다. 이후 `/video/offer` 요청에
 `Authorization: Bearer <access_token>` 헤더를 넣어야 합니다.
 
+인증 성공 응답에는 `status`, `message`, `access_token`, `expires_in`이 포함됩니다.
+인증 실패나 만료 토큰은 `status`, `error_code`, `message` 형식으로 반환됩니다.
+인증 성공·실패와 토큰 만료 정보는 서버를 실행한 CMD에도 기록됩니다.
+
 2. 개인 로컬에 .venv를 설정해주세요(필요시)
 3. python -m pip --version 로 터미널에서 제대로 venv로 뜨는지 확인 해주세요 / 파워셀에서도 (.venv) 붙는지 확인
 ex> pip 26.2.2 from C:... \sm_26_summer_1st_project\.venv\Lib\site-packages\pip (python 3.14)

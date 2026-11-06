@@ -1,3 +1,4 @@
+import logging
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
@@ -12,6 +13,7 @@ from backend.units.error_handler import InvalidTokenException
 #라우터 등록 및 태그 지정
 router = APIRouter(prefix="/video", tags=["video"])
 bearer_scheme = HTTPBearer(auto_error=False)
+logger = logging.getLogger(__name__)
 
 
 class WebRTCOffer(BaseModel):
@@ -20,6 +22,8 @@ class WebRTCOffer(BaseModel):
 
 
 class WebRTCAnswer(BaseModel):
+    status: int = 200
+    message: str = "영상 연결 인증 및 협상이 완료되었습니다."
     sdp: str
     type: str
 
@@ -35,10 +39,13 @@ async def create_video_answer(
     camera_index: int = Query(default=0, ge=0),
     camera_url: str | None = Query(default=None),
 ) -> WebRTCAnswer:
+    # 영상 연결 전에 Bearer 토큰을 확인하여 인증된 사용자만 연결을 만들 수 있게 합니다.
     if credentials is None or credentials.scheme.lower() != "bearer":
+        logger.warning("영상 연결 거부: Bearer 인증 정보 없음")
         raise InvalidTokenException()
 
-    verify_access_token(credentials.credentials)
+    username = verify_access_token(credentials.credentials)
+    logger.info("영상 연결 인증 완료: username=%s, camera_type=%s", username, camera_type)
 
     remote_offer = RTCSessionDescription(
         sdp=offer.sdp,
@@ -51,8 +58,11 @@ async def create_video_answer(
         camera_index=camera_index,
         camera_url=camera_url,
     )
+    logger.info("영상 연결 응답 생성 완료: username=%s, camera_type=%s", username, camera_type)
 
     return WebRTCAnswer(
+        status=200,
+        message="영상 연결 인증 및 협상이 완료되었습니다.",
         sdp=answer.sdp,
         type=answer.type,
     )

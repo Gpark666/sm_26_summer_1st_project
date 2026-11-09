@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebRTC 카메라 테스트</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #f4f6f8;
+        color: #17202a;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        box-sizing: border-box;
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 24px 16px 40px;
+      }
+
+      h1 {
+        margin-top: 0;
+      }
+
+      .panel {
+        background: #fff;
+        border: 1px solid #dfe4ea;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 16px;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin: 12px 0 6px;
+      }
+
+      input {
+        box-sizing: border-box;
+        width: 100%;
+        border: 1px solid #b8c2cc;
+        border-radius: 8px;
+        padding: 10px;
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 12px 8px 0 0;
+        font: inherit;
+        font-weight: 700;
+        color: #fff;
+        background: #1769e0;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #5d6875;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      .videos {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+      }
+
+      video {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: #101418;
+        border-radius: 8px;
+        object-fit: cover;
+      }
+
+      #status {
+        white-space: pre-wrap;
+        margin: 0;
+        color: #354052;
+      }
+
+      .hint {
+        color: #5d6875;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>휴대폰 WebRTC 카메라 테스트</h1>
+      <p class="hint">
+        백엔드에서 발급한 JWT로 인증한 뒤 휴대폰 카메라 영상을 WebRTC로 전송하고,
+        백엔드가 되돌려 보내는 영상을 확인합니다.
+      </p>
+
+      <section class="panel">
+        <label for="apiBaseUrl">백엔드 주소</label>
+        <input id="apiBaseUrl" value="http://localhost:8000" />
+
+        <label for="username">아이디</label>
+        <input id="username" autocomplete="username" value="demo" />
+
+        <label for="password">비밀번호</label>
+        <input id="password" type="password" autocomplete="current-password" />
+
+        <button id="startButton">로그인 후 카메라 시작</button>
+        <button id="stopButton" class="secondary" disabled>연결 중지</button>
+      </section>
+
+      <section class="panel videos">
+        <div>
+          <h2>휴대폰 카메라</h2>
+          <video id="localVideo" autoplay muted playsinline></video>
+        </div>
+        <div>
+          <h2>백엔드에서 수신</h2>
+          <video id="remoteVideo" autoplay playsinline></video>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>상태</h2>
+        <p id="status">대기 중</p>
+      </section>
+    </main>
+
+    <script>
+      const apiBaseUrlInput = document.querySelector("#apiBaseUrl");
+      const usernameInput = document.querySelector("#username");
+      const passwordInput = document.querySelector("#password");
+      const startButton = document.querySelector("#startButton");
+      const stopButton = document.querySelector("#stopButton");
+      const localVideo = document.querySelector("#localVideo");
+      const remoteVideo = document.querySelector("#remoteVideo");
+      const statusElement = document.querySelector("#status");
+
+      let peerConnection = null;
+      let localStream = null;
+
+      function setStatus(message) {
+        statusElement.textContent = message;
+      }
+
+      function getApiBaseUrl() {
+        return apiBaseUrlInput.value.trim().replace(/\/+$/, "");
+      }
+
+      async function readError(response) {
+        try {
+          const body = await response.json();
+          return body.message || `HTTP ${response.status}`;
+        } catch {
+          return `HTTP ${response.status}`;
+        }
+      }
+
+      async function login() {
+        const response = await fetch(`${getApiBaseUrl()}/auth/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: usernameInput.value,
+            password: passwordInput.value,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`로그인 실패: ${await readError(response)}`);
+        }
+
+        const body = await response.json();
+        return body.access_token;
+      }
+
+      async function startCamera() {
+        startButton.disabled = true;
+        setStatus("로그인 중...");
+
+        try {
+          const token = await login();
+          setStatus("카메라 권한을 요청하는 중...");
+          localStream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: { facingMode: { ideal: "environment" } },
+          });
+          localVideo.srcObject = localStream;
+
+          peerConnection = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          });
+
+          peerConnection.ontrack = (event) => {
+            remoteVideo.srcObject = event.streams[0] || new MediaStream([event.track]);
+          };
+          peerConnection.onconnectionstatechange = () => {
+            setStatus(`WebRTC 상태: ${peerConnection.connectionState}`);
+          };
+
+          for (const track of localStream.getTracks()) {
+            peerConnection.addTrack(track, localStream);
+          }
+
+          setStatus("WebRTC offer 생성 중...");
+          const offer = await peerConnection.createOffer();
+          await peerConnection.setLocalDescription(offer);
+
+          setStatus("백엔드와 WebRTC 협상 중...");
+          const response = await fetch(
+            `${getApiBaseUrl()}/video/offer?camera_type=webrtc`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                sdp: peerConnection.localDescription.sdp,
+                type: peerConnection.localDescription.type,
+              }),
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error(`영상 연결 실패: ${await readError(response)}`);
+          }
+
+          const answer = await response.json();
+          await peerConnection.setRemoteDescription({
+            type: answer.type,
+            sdp: answer.sdp,
+          });
+
+          stopButton.disabled = false;
+          setStatus("연결 완료. 백엔드 수신 영상을 확인하세요.");
+        } catch (error) {
+          await stopCamera();
+          setStatus(error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.");
+        } finally {
+          startButton.disabled = false;
+        }
+      }
+
+      async function stopCamera() {
+        if (peerConnection) {
+          peerConnection.close();
+          peerConnection = null;
+        }
+        if (localStream) {
+          for (const track of localStream.getTracks()) {
+            track.stop();
+          }
+          localStream = null;
+        }
+        localVideo.srcObject = null;
+        remoteVideo.srcObject = null;
+        stopButton.disabled = true;
+      }
+
+      startButton.addEventListener("click", startCamera);
+      stopButton.addEventListener("click", async () => {
+        await stopCamera();
+        setStatus("연결이 중지되었습니다.");
+      });
+    </script>
+  </body>
+</html>

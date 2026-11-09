@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.units.error_handler import register_exception_handlers
 from backend.routers.auth_router import router as auth_router
@@ -15,6 +16,16 @@ logging.basicConfig(
 app = FastAPI()
 
 register_exception_handlers(app)
+
+# 개발용 테스트 프론트엔드가 다른 포트 또는 같은 Wi-Fi의 휴대폰에서
+# API를 호출할 수 있도록 CORS를 허용합니다.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 서버 상태 체크
 @app.get("/")

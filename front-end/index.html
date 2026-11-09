@@ -192,6 +192,11 @@
         try {
           const token = await login();
           setStatus("카메라 권한을 요청하는 중...");
+          if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+            throw new Error(
+              "휴대폰 카메라는 HTTPS에서만 사용할 수 있습니다. 현재 페이지를 HTTPS 주소로 열어주세요.",
+            );
+          }
           localStream = await navigator.mediaDevices.getUserMedia({
             audio: false,
             video: { facingMode: { ideal: "environment" } },

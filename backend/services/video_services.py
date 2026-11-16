@@ -13,9 +13,49 @@ from backend.units.error_handler import (
     StreamDisconnectedException,
     VideoReadException,
 )
+from dataclasses import dataclass
+from uuid import uuid4
+
 
 CameraType = Literal["local", "network", "webrtc"]
 
+#임시 카메라 테스터 코드
+@dataclass
+class Camera:
+    id: str
+    name: str
+    type: CameraType
+    camera_index: int | None = None
+    camera_url: str | None = None
+
+class InMemoryCameraRepository:
+    def __init__(self) -> None:
+        self.cameras: dict[str, Camera] = {}
+
+    def create(
+        self,
+        name: str,
+        camera_type: CameraType,
+        camera_index: int | None = None,
+        camera_url: str | None = None,
+    ) -> Camera:
+        camera = Camera(
+            id=str(uuid4()),
+            name=name,
+            type=camera_type,
+            camera_index=camera_index,
+            camera_url=camera_url,
+        )
+        self.cameras[camera.id] = camera
+        return camera
+
+    def list(self) -> list[Camera]:
+        return list(self.cameras.values())
+
+    def get(self, camera_id: str) -> Camera | None:
+        return self.cameras.get(camera_id)
+#---------------------
+    
 # 카메라 종류에 따라 영상 프레임을 읽는 서비스입니다. 
 # USB 웹캠, RTSP/HTTP 카메라, WebRTC 브라우저/휴대폰 카메라를 지원합니다.
 class CameraSource(ABC):
@@ -114,9 +154,7 @@ class VideoService:
     async def create_answer(
         self,
         offer: RTCSessionDescription,
-        camera_type: CameraType,
-        camera_index: int = 0,
-        camera_url: str | None = None,
+        camera: Camera,
     ) -> RTCSessionDescription:
         peer_connection = RTCPeerConnection()
         self.peer_connections.add(peer_connection)
@@ -201,5 +239,5 @@ class VideoService:
         for peer_connection in list(self.peer_connections):
             await self.close_connection(peer_connection)
 
-
+camera_repository = InMemoryCameraRepository() #임시용 코드
 video_service = VideoService()

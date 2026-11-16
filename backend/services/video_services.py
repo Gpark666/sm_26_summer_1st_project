@@ -170,6 +170,9 @@ class VideoService:
 
         @peer_connection.on("track")
         def on_track(track: MediaStreamTrack) -> None:
+            camera_type = camera.type
+            camera_index = camera.camera_index
+            camera_url = camera.camera_url
             if camera_type != "webrtc" or track.kind != "video":
                 track.stop()
                 return
@@ -184,14 +187,14 @@ class VideoService:
             task.add_done_callback(self.incoming_tasks.discard)
 
         try:
-            if camera_type == "local":
-                source: CameraSource = LocalCameraSource(camera_index)
+            if camera.type == "local":
+                source: CameraSource = LocalCameraSource(camera.camera_index)
                 self.sources[peer_connection] = source
                 peer_connection.addTrack(CameraVideoTrack(source))
-            elif camera_type == "network":
-                if not camera_url:
+            elif camera.type == "network":
+                if not camera.camera_url:
                     raise CameraNotFoundException("네트워크 카메라 주소가 필요합니다.")
-                source = NetworkCameraSource(camera_url)
+                source = NetworkCameraSource(camera.camera_url)
                 self.sources[peer_connection] = source
                 peer_connection.addTrack(CameraVideoTrack(source))
 

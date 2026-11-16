@@ -32,6 +32,14 @@ class CameraNotFoundException(CustomBaseException):
     def __init__(self, message="카메라 장치를 찾을 수 없거나 연결되어 있지 않습니다."):
         super().__init__(status.HTTP_503_SERVICE_UNAVAILABLE, "CAMERA_NOT_FOUND", message)
 
+class InvalidCameraRequestException(CustomBaseException):
+    def __init__(self, message="카메라 등록 정보가 올바르지 않습니다."):
+        super().__init__(
+            status.HTTP_400_BAD_REQUEST,
+            "INVALID_CAMERA_REQUEST",
+            message,
+        )
+
 class VideoReadException(CustomBaseException):
     def __init__(self, message="카메라 프레임을 읽어오는 데 실패했습니다."):
         super().__init__(status.HTTP_500_INTERNAL_SERVER_ERROR, "VIDEO_READ_ERROR", message)

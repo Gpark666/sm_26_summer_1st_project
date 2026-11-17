@@ -1,0 +1,9 @@
+class CameraRepository:
+    def create(self, camera: Camera) -> Camera:
+        ...
+
+    def list(self) -> list[Camera]:
+        ...
+
+    def get(self, camera_id: str) -> Camera | None:
+        ...

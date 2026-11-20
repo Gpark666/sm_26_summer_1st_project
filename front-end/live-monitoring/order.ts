@@ -80,9 +80,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 // 읽지 못하거나 형식이 다른 조합은 기본 순서(저장 없음)로 본다.
-export function readLayouts(storage: StorageAccess = browserStorage): SavedLayouts {
+export function readLayouts(storage: StorageAccess = browserStorage, key = orderKey): SavedLayouts {
   try {
-    const parsed: unknown = JSON.parse(storage().getItem(orderKey) ?? '{}')
+    const parsed: unknown = JSON.parse(storage().getItem(key) ?? '{}')
     if (!isRecord(parsed)) return {}
     const saved: SavedLayouts = {}
     for (const layout of Object.keys(layouts) as Layout[]) {
@@ -99,16 +99,16 @@ export function readLayouts(storage: StorageAccess = browserStorage): SavedLayou
 
 // 한 그리드·위치의 배치만 바꾼다. null이면 그 조합을 기본 순서로 되돌린다.
 // 저장하지 못하면 false를 돌려주고 화면의 배치는 그대로 쓴다.
-export function saveLayout(layout: Layout, location: string, slots: Slots | null, storage: StorageAccess = browserStorage) {
+export function saveLayout(layout: Layout, location: string, slots: Slots | null, storage: StorageAccess = browserStorage, key = orderKey) {
   try {
-    const saved = readLayouts(storage)
+    const saved = readLayouts(storage, key)
     const byLocation = { ...saved[layout] }
     if (slots) byLocation[location] = slots
     else delete byLocation[location]
     if (Object.keys(byLocation).length) saved[layout] = byLocation
     else delete saved[layout]
-    if (Object.keys(saved).length) storage().setItem(orderKey, JSON.stringify(saved))
-    else storage().removeItem(orderKey)
+    if (Object.keys(saved).length) storage().setItem(key, JSON.stringify(saved))
+    else storage().removeItem(key)
     return true
   } catch {
     return false

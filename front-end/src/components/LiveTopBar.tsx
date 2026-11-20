@@ -1,7 +1,7 @@
-import autoFocusIcon from './icons/auto-focus.svg'
-import nextIcon from './icons/page-next.svg'
-import previousIcon from './icons/page-prev.svg'
-import './live-monitoring.css'
+import autoFocusIcon from '../../live-monitoring/icons/auto-focus.svg'
+import nextIcon from '../../live-monitoring/icons/page-next.svg'
+import previousIcon from '../../live-monitoring/icons/page-prev.svg'
+import '../../live-monitoring/live-monitoring.css'
 
 type Props = {
   layout: string

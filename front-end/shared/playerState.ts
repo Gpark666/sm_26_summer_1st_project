@@ -10,6 +10,7 @@ export type PlayerState =
 export type PlayerEvent =
   | { type: 'start', status: Camera['status'] }
   | { type: 'retry' }
+  | { type: 'stream-error', message: string }
   | { type: 'success', session: unknown }
   | { type: 'failure', message: string }
 
@@ -20,6 +21,7 @@ export function startState(status: Camera['status']): PlayerState {
 export function nextState(state: PlayerState, event: PlayerEvent): PlayerState {
   switch (event.type) {
     case 'start': return startState(event.status)
+    case 'stream-error': return { kind: 'failed', message: event.message }
     case 'retry': return { kind: 'connecting' }
     // 요청 중이 아닐 때 늦게 도착한 응답은 무시한다.
     case 'success': return state.kind === 'connecting' ? { kind: 'playing', session: event.session } : state

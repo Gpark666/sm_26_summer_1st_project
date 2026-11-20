@@ -49,6 +49,9 @@ class InMemoryCameraRepository:
         self.cameras[camera.id] = camera
         return camera
 
+    def remove(self, camera_id: str) -> bool:
+        return self.cameras.pop(camera_id, None) is not None
+
     def list(self) -> list[Camera]:
         return list(self.cameras.values())
 
@@ -150,6 +153,7 @@ class VideoService:
         self.incoming_sources: Dict[RTCPeerConnection, Set[WebRTCSource]] = {}
         self.incoming_tasks: Set[asyncio.Task[None]] = set()
         self.relay = MediaRelay()
+        self.camera_ids: dict[RTCPeerConnection, str] = {}
 
     async def create_answer(
         self,
@@ -158,6 +162,7 @@ class VideoService:
     ) -> RTCSessionDescription:
         peer_connection = RTCPeerConnection()
         self.peer_connections.add(peer_connection)
+        self.camera_ids[peer_connection] = camera.id
 
         @peer_connection.on("connectionstatechange")
         async def on_connectionstatechange() -> None:
@@ -228,6 +233,7 @@ class VideoService:
 #ai서버 생길 시 고칠 부분========!!!
 #ai서버 생길 시 고칠 부분========!!!
     async def close_connection(self, peer_connection: RTCPeerConnection) -> None:
+        self.camera_ids.pop(peer_connection, None)
         source = self.sources.pop(peer_connection, None)
         if source:
             source.close()
@@ -237,6 +243,11 @@ class VideoService:
 
         self.peer_connections.discard(peer_connection)
         await peer_connection.close()
+
+    async def close_camera(self, camera_id: str) -> None:
+        for peer, registered_id in list(self.camera_ids.items()):
+            if registered_id == camera_id:
+                await self.close_connection(peer)
 
     async def close_all(self) -> None:
         for peer_connection in list(self.peer_connections):

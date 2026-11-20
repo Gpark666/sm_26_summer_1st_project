@@ -20,3 +20,7 @@
 .w03-side nav a[aria-current="page"] { color:#91b9ff; background:#202f47; font-weight:650; }
 @media(max-width:900px) { .w03-shell {grid-template-columns:minmax(0,1fr) 150px;} }
 @media(max-width:680px) { .w03-shell,.w03-shell.collapsed {display:block;} .w03-side {display:none;} }
+
+.server-access { padding: 6px 16px; background: var(--surface); }
+.server-access form { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:8px; }
+.server-access button,.server-access input { background:#202530; color:inherit; border:1px solid #455062; border-radius:5px; padding:6px 9px; }

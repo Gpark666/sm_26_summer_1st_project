@@ -1,10 +1,10 @@
 import { useRef, useState, type HTMLAttributes, type KeyboardEvent } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { filterCameras, type Camera, type CameraSource } from '../camera-list/cameraApi'
-import { useCameraList } from '../shared/useCameraList'
-import CameraPicker from './CameraPicker'
-import LiveTile from './LiveTile'
-import LiveTopBar from './LiveTopBar'
+import { useCameraList } from '../src/hooks/useCameraList'
+import CameraPicker from '../src/components/CameraPicker'
+import LiveTile from '../src/components/LiveTile'
+import LiveTopBar from '../src/components/LiveTopBar'
 import { layoutLabels, layoutOptions, layouts, pageCount, parseLayout, parsePage, startView, type Layout } from './layout'
 import { arrange, moveSlot, neighbor, pageCells, readLayouts, saveLayout } from './order'
 
@@ -21,7 +21,8 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const current = useLocation()
-  const [saved, setSaved] = useState(() => readLayouts())
+  const orderStorageKey = source.token ? 'cctv:server-live-order:v1' : undefined
+  const [saved, setSaved] = useState(() => readLayouts(undefined, orderStorageKey))
   const [move, setMove] = useState<Move | null>(null)
   const [notice, setNotice] = useState('')
   // 카메라 고르기 창을 연 칸(페이지 안 칸 번호). view가 바뀌면 닫힌다.
@@ -82,11 +83,11 @@ export default function LiveMonitoringPage({ source, preferred }: Props) {
     setSaved(current => ({ ...current, [layout]: { ...current[layout], [location]: next } }))
     setNotice((other ? `‘${picked.name}’, ‘${other.name}’ 카메라의 자리를 바꿨습니다.`
       : `‘${picked.name}’ 카메라를 ${index + 1}번째 빈 칸으로 옮겼습니다.`) +
-      (saveLayout(layout, location, next) ? '' : ' 브라우저에 저장하지 못해 이 화면에서만 적용됩니다.'))
+      (saveLayout(layout, location, next, undefined, orderStorageKey) ? '' : ' 브라우저에 저장하지 못해 이 화면에서만 적용됩니다.'))
   }
   function resetOrder() {
     setSaved(current => ({ ...current, [layout]: { ...current[layout], [location]: [] } }))
-    saveLayout(layout, location, null)
+    saveLayout(layout, location, null, undefined, orderStorageKey)
     setNotice(`${layoutLabels[layout]} · ${location || '전체 위치'} 배치를 기본 순서로 되돌렸습니다.`)
   }
   // 칸에서 카메라 고르기: 다른 페이지에 있는 카메라도 이 칸으로 가져온다.

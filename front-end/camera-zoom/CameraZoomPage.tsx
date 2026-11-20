@@ -1,11 +1,11 @@
 import { useEffect, useEffectEvent, useState, type MouseEvent } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import type { Camera, CameraSource } from '../camera-list/cameraApi'
-import LiveTopBar from '../live-monitoring/LiveTopBar'
+import LiveTopBar from '../src/components/LiveTopBar'
 import { layoutOptions, pageOf, parseLayout, type Layout } from '../live-monitoring/layout'
 import { arrange, readLayouts } from '../live-monitoring/order'
-import VideoPlayer from '../shared/VideoPlayer'
-import { useCameraList } from '../shared/useCameraList'
+import VideoPlayer from '../src/components/VideoPlayer'
+import { useCameraList } from '../src/hooks/useCameraList'
 import { backTarget, readFrom, readMoved, returnTo } from './returnPath'
 import './camera-zoom.css'
 
@@ -22,7 +22,8 @@ export default function CameraZoomPage({ source }: Props) {
   const moved = readMoved(state)
   const { rows, loading, error, updated, refresh } = useCameraList(source)
   // W01에서 바꾼 그리드·위치(전체 위치 포함)별 칸 배치를 그대로 따른다.
-  const [saved] = useState(() => readLayouts())
+  const orderStorageKey = source.token ? 'cctv:server-live-order:v1' : undefined
+  const [saved] = useState(() => readLayouts(undefined, orderStorageKey))
   const slotsOf = (target: Layout, place: string) =>
     arrange(place ? rows.filter(row => row.location === place) : rows, saved[target]?.[place])
 

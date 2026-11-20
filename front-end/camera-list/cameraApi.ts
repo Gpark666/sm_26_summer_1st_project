@@ -2,15 +2,19 @@ export type Camera = {
   cameraId: string
   name: string
   location: string
-  status: 'online' | 'offline'
+  status: 'online' | 'offline' | 'unknown'
   lastSeenAt: string | null
 }
 
 export type CameraSource = {
+  token?: string
+  remove?: (cameraId: string) => Promise<void>
   demo: boolean
   list: (signal: AbortSignal, attempt: number) => Promise<Camera[]>
-  playback: (camera: Camera, signal: AbortSignal) => Promise<unknown>
+  playback?: (camera: Camera, signal: AbortSignal) => Promise<unknown>
 }
+
+export const disconnectedSource: CameraSource = { demo: false, list: async () => [] }
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

@@ -1,13 +1,24 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 from backend.services.auth_services import (
     authenticate_user,
     create_access_token,
     get_access_token_expire_seconds,
+    verify_access_token,
 )
+from backend.units.error_handler import InvalidTokenException
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.get("/session")
+def check_session(credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False))):
+    if credentials is None:
+        raise InvalidTokenException()
+    verify_access_token(credentials.credentials)
+    return {"authenticated": True}
 
 
 class LoginRequest(BaseModel):

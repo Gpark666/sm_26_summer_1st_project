@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router'
-import './shell.css'
+import '../../shared/shell.css'
 
 type Props = {
   collapsed: boolean

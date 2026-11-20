@@ -1,6 +1,6 @@
 import type { HTMLAttributes, KeyboardEvent, MouseEvent, ReactNode } from 'react'
-import type { Camera, CameraSource } from '../camera-list/cameraApi'
-import VideoPlayer from '../shared/VideoPlayer'
+import type { Camera, CameraSource } from '../../camera-list/cameraApi'
+import VideoPlayer from './VideoPlayer'
 
 type Props = {
   camera: Camera

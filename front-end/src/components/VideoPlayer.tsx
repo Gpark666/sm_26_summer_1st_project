@@ -1,11 +1,12 @@
-import { useEffect, useEffectEvent, useReducer, useState, type ReactNode } from 'react'
-import type { Camera, CameraSource } from '../camera-list/cameraApi'
-import { canRetry, failureMessage, nextState, startState } from './playerState'
-import cameraIcon from './icons/camera.svg'
-import errorIcon from './icons/error.svg'
-import loadingIcon from './icons/loading.svg'
-import offlineIcon from './icons/offline.svg'
-import './video-player.css'
+import { useEffect, useEffectEvent, useReducer, useRef, useState, type ReactNode } from 'react'
+import type { Camera, CameraSource } from '../../camera-list/cameraApi'
+import { canRetry, failureMessage, nextState, startState } from '../../shared/playerState'
+import { receiveVideo } from '../../camera-list/serverVideo'
+import cameraIcon from '../../shared/icons/camera.svg'
+import errorIcon from '../../shared/icons/error.svg'
+import loadingIcon from '../../shared/icons/loading.svg'
+import offlineIcon from '../../shared/icons/offline.svg'
+import '../../shared/video-player.css'
 
 type Props = {
   camera: Camera
@@ -32,7 +33,8 @@ export default function VideoPlayer({ camera, source, showLocation, actions, chi
   const { cameraId, status } = camera
 
   // 목록 새로고침으로 객체만 바뀐 경우에는 다시 요청하지 않도록 ID·상태만 본다.
-  const request = useEffectEvent((signal: AbortSignal) => source.playback(camera, signal))
+  const video = useRef<HTMLVideoElement>(null)
+  const request = useEffectEvent((signal: AbortSignal) => source.playback?.(camera, signal))
   useEffect(() => {
     if (retried) dispatch({ type: 'retry' })
     else {
@@ -40,7 +42,21 @@ export default function VideoPlayer({ camera, source, showLocation, actions, chi
       if (status === 'offline') return
     }
     const controller = new AbortController()
-    request(controller.signal).then(
+    if (source.token && video.current) {
+      function fail(message: string) {
+        if (controller.signal.aborted) return
+        controller.abort()
+        dispatch({ type: 'stream-error', message })
+      }
+      const timer = window.setTimeout(() => fail('첫 영상 수신 시간 초과'), 30000)
+      controller.signal.addEventListener('abort', () => clearTimeout(timer), { once: true })
+      void receiveVideo(cameraId, source.token, video.current, controller.signal, () => {
+        clearTimeout(timer)
+        dispatch({ type: 'success', session: cameraId })
+      }, fail).catch(error => fail(failureMessage(error)))
+      return () => controller.abort()
+    }
+    request(controller.signal)?.then(
       session => { if (!controller.signal.aborted) dispatch({ type: 'success', session }) },
       error => { if (!controller.signal.aborted) dispatch({ type: 'failure', message: failureMessage(error) }) })
     return () => controller.abort()
@@ -53,7 +69,9 @@ export default function VideoPlayer({ camera, source, showLocation, actions, chi
   const label = showLocation ? camera.name + ' · ' + camera.location : camera.name
 
   return <section className={'vp ' + state.kind} aria-label={camera.name + ' 영상'}>
-    {state.kind === 'playing' && <>
+    {source.token && <video ref={video} autoPlay playsInline muted aria-label={camera.name + ' 실시간 영상'}
+      style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, objectFit: 'contain' }} />}
+    {!source.token && state.kind === 'playing' && <>
       <div className="vp-center"><img src={cameraIcon} alt="" width={48} height={48} /><span>재생 중</span></div>
       <div className="vp-overlay">{children}</div>
     </>}

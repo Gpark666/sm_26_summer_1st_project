@@ -9,6 +9,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "desktop:demo": "npm run build:desktop-demo && electron .",
+    "desktop": "npm run build:desktop && electron .",
+    "build:desktop": "tsc -b && vite build --base=./",
+    "make:desktop": "npm run build:desktop && electron-forge make",
     "build:desktop-demo": "tsc -b && vite build --mode desktop-demo --base=./",
     "make:demo": "npm run build:desktop-demo && electron-forge make"
   },

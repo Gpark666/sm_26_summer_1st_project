@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { filterCameras, type Camera } from '../camera-list/cameraApi'
-import type { Layout } from './layout'
-import { positionOf } from './order'
+import { filterCameras, type Camera } from '../../camera-list/cameraApi'
+import type { Layout } from '../../live-monitoring/layout'
+import { positionOf } from '../../live-monitoring/order'
 
 type Props = {
   // 카메라를 넣을 전체 칸 번호(0부터)와 지금 그리드·위치의 칸 배치
@@ -44,7 +44,7 @@ export default function CameraPicker({ slot, layout, slots, onPick, onClose }: P
             <button disabled={index === slot} onClick={() => onPick(row)}>
               <span className={'w01-picker-dot ' + row.status} aria-hidden="true" />
               <strong>{row.name}</strong>
-              <span>{row.location} · {row.status === 'online' ? '온라인' : '오프라인'}</span>
+              <span>{row.location} · {row.status === 'unknown' ? '등록됨' : row.status === 'online' ? '온라인' : '오프라인'}</span>
               <small>{index === slot ? '이 칸' : `${at.page}쪽 ${at.cell}번째 칸`}</small>
             </button>
           </li>

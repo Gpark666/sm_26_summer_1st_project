@@ -45,6 +45,19 @@ export default function CameraListPage({ source, onOpenLive, onAddCamera }: Prop
     return () => controller.abort()
   }, [source, attempt])
 
+  const [removing, setRemoving] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  async function remove(row: Camera) {
+    if (!source.remove || removing || !window.confirm(row.name + ' 카메라를 목록에서 삭제할까요?')) return
+    setRemoving(row.cameraId)
+    setDeleteError('')
+    try {
+      await source.remove(row.cameraId)
+      setRows(current => current.filter(camera => camera.cameraId !== row.cameraId))
+      refresh()
+    } catch (err) { setDeleteError(reason(err)) }
+    finally { setRemoving('') }
+  }
   const online = rows.filter(row => row.status === 'online').length
   const locations = [...new Set(rows.map(row => row.location).concat(location ? [location] : []))]
   const shown = filterCameras(rows, query, location, status)
@@ -55,7 +68,7 @@ export default function CameraListPage({ source, onOpenLive, onAddCamera }: Prop
     <header className="w03-head"><h1>카메라 목록</h1><span>{source.demo ? '예시 데이터' : '서버 데이터'}</span></header>
     <div className="w03-body">
       <section className="w03-summary" aria-label="조회된 카메라 현황">
-        {([['조회된 카메라', rows.length, 'total'], ['온라인', online, 'online'], ['오프라인', rows.length - online, 'offline']] as const)
+        {([['조회된 카메라', rows.length, 'total'], ['온라인', online, 'online'], ['오프라인', rows.filter(row => row.status === 'offline').length, 'offline']] as const)
           .map(([label, count, style]) => <div className="w03-card" key={style}>
             <span className={'w03-pill ' + style}>{label}</span><strong>{updated ? count + '대' : '—'}</strong>
           </div>)}
@@ -73,6 +86,7 @@ export default function CameraListPage({ source, onOpenLive, onAddCamera }: Prop
           <button disabled={!onAddCamera} onClick={onAddCamera} title={onAddCamera ? '카메라 등록' : '카메라 등록 기능 준비 중'}>+ 카메라 추가</button>
         </div>
       </section>
+      {deleteError && <div role="alert" className="w03-alert">카메라 삭제 실패 · {deleteError}</div>}
       {error && <div role="alert" className="w03-alert">목록 조회 실패 · {error} {updated && '마지막으로 조회한 목록을 표시합니다.'} <button onClick={refresh}>다시 조회</button></div>}
       <section className="w03-panel" aria-label="카메라 조회 결과" aria-busy={loading}>
         <div className="w03-panel-head"><h2>카메라 목록 {updated && '· ' + shown.length}</h2><small>{updated ? '마지막 업데이트 ' + time(updated) : '조회 대기'}</small></div>
@@ -81,12 +95,13 @@ export default function CameraListPage({ source, onOpenLive, onAddCamera }: Prop
           <thead><tr>{['카메라명','위치','상태','마지막 응답','연결 정보','작업'].map(col => <th scope="col" key={col}>{col}</th>)}</tr></thead>
           <tbody>{shown.map(row => <tr key={row.cameraId}>
             <th scope="row">{row.name}</th><td>{row.location}</td>
-            <td><span className={'w03-pill ' + row.status}>{row.status === 'online' ? '온라인' : '오프라인'}</span></td>
+            <td><span className={'w03-pill ' + row.status}>{row.status === 'unknown' ? '등록됨' : row.status === 'online' ? '온라인' : '오프라인'}</span></td>
             <td><time dateTime={row.lastSeenAt ?? undefined} title={row.lastSeenAt ?? undefined}>{time(row.lastSeenAt)}</time></td>
-            <td>{row.status === 'online' ? '장비 응답 정상' : '장비 연결 끊김'}</td>
+            <td>{row.status === 'unknown' ? '영상 연결 시 확인' : row.status === 'online' ? '장비 응답 정상' : '장비 연결 끊김'}</td>
             <td><button onClick={() => onOpenLive(row)}>
               {row.status === 'offline' ? '영상 재연결' : '실시간 영상 보기'}
-            </button></td>
+            </button> {source.remove && <button disabled={!!removing || loading} onClick={() => void remove(row)}
+              aria-label={row.name + ' 삭제'}>{removing === row.cameraId ? '삭제 중…' : '삭제'}</button>}</td>
           </tr>)}</tbody>
         </table></div>}
         {!loading && !error && !rows.length && <p className="w03-message">조회할 수 있는 카메라가 없습니다.</p>}

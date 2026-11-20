@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Camera, CameraSource } from '../camera-list/cameraApi'
-import { failureMessage } from './playerState'
+import type { Camera, CameraSource } from '../../camera-list/cameraApi'
+import { failureMessage } from '../../shared/playerState'
 
 // W01·W02 공통 목록 조회. 실패해도 마지막으로 받은 목록은 유지한다.
 export function useCameraList(source: CameraSource) {

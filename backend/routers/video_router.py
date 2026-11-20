@@ -83,6 +83,15 @@ async def list_cameras():
         ]
     }
 
+@router.delete("/cameras/{camera_id}", status_code=204)
+async def remove_camera(camera_id: str, credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme)):
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise InvalidTokenException()
+    verify_access_token(credentials.credentials)
+    if not camera_repository.remove(camera_id):
+        raise CameraNotFoundException("등록된 카메라가 없습니다.")
+    await video_service.close_camera(camera_id)
+
 @router.post("/offer", response_model=WebRTCAnswer)
 async def create_video_answer(
     offer: WebRTCOffer,
